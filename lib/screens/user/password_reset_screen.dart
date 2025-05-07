@@ -109,7 +109,12 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> with SingleTi
 
   // Retourner à l'écran de connexion
   void _navigateToLogin() {
-    context.go('/auth');
+    // Utiliser Future.microtask pour éviter les problèmes de navigation pendant le build
+    Future.microtask(() {
+      if (mounted) {
+        context.go('/auth');
+      }
+    });
   }
 
   @override

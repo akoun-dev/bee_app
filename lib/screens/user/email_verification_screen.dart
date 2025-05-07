@@ -11,7 +11,7 @@ import '../../widgets/common_widgets.dart';
 // Écran de vérification d'email
 class EmailVerificationScreen extends StatefulWidget {
   final String email;
-  
+
   const EmailVerificationScreen({
     super.key,
     required this.email,
@@ -26,7 +26,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> with 
   bool _emailSent = false;
   String? _errorMessage;
   Timer? _timer;
-  
+
   // Animation controller pour les transitions
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -61,7 +61,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> with 
 
     // Démarrer l'animation
     _animationController.forward();
-    
+
     // Démarrer la vérification périodique
     _startVerificationCheck();
   }
@@ -72,21 +72,40 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> with 
     _animationController.dispose();
     super.dispose();
   }
-  
+
   // Démarrer la vérification périodique de l'état de vérification de l'email
   void _startVerificationCheck() {
     // Vérifier toutes les 5 secondes si l'email a été vérifié
     _timer = Timer.periodic(const Duration(seconds: 5), (timer) async {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      final isVerified = await authService.isEmailVerified();
-      
-      if (isVerified) {
+      // Vérifier si le widget est toujours monté avant de continuer
+      if (!mounted) {
         _timer?.cancel();
-        
-        if (mounted) {
-          // Rediriger vers le tableau de bord
-          context.go('/dashboard');
+        return;
+      }
+
+      try {
+        final authService = Provider.of<AuthService>(context, listen: false);
+        final isVerified = await authService.isEmailVerified();
+
+        // Vérifier à nouveau si le widget est toujours monté après l'opération asynchrone
+        if (!mounted) {
+          _timer?.cancel();
+          return;
         }
+
+        if (isVerified) {
+          _timer?.cancel();
+
+          // Utiliser Future.microtask pour éviter les problèmes de navigation pendant le build
+          Future.microtask(() {
+            if (mounted) {
+              // Rediriger vers le tableau de bord
+              context.go('/dashboard');
+            }
+          });
+        }
+      } catch (e) {
+        // Ignorer les erreurs pendant la vérification périodique
       }
     });
   }
@@ -107,7 +126,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> with 
           _emailSent = true;
           _isLoading = false;
         });
-        
+
         // Afficher un message de succès
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -129,9 +148,12 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> with 
       });
     }
   }
-  
+
   // Vérifier manuellement si l'email a été vérifié
   Future<void> _checkEmailVerification() async {
+    // Vérifier si le widget est toujours monté
+    if (!mounted) return;
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -140,37 +162,52 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> with 
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
       final isVerified = await authService.isEmailVerified();
-      
+
+      // Vérifier à nouveau si le widget est toujours monté après l'opération asynchrone
+      if (!mounted) return;
+
       if (isVerified) {
-        if (mounted) {
-          // Rediriger vers le tableau de bord
-          context.go('/dashboard');
-        }
+        // Utiliser Future.microtask pour éviter les problèmes de navigation pendant le build
+        Future.microtask(() {
+          if (mounted) {
+            // Rediriger vers le tableau de bord
+            context.go('/dashboard');
+          }
+        });
       } else {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-          
-          // Afficher un message d'erreur
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Votre email n\'a pas encore été vérifié. Veuillez vérifier votre boîte de réception.'),
-              backgroundColor: AppTheme.errorColor,
-            ),
-          );
-        }
+        setState(() {
+          _isLoading = false;
+        });
+
+        // Afficher un message d'erreur
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Votre email n\'a pas encore été vérifié. Veuillez vérifier votre boîte de réception.'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
       }
     } catch (e) {
+      // Vérifier si le widget est toujours monté
+      if (!mounted) return;
+
       setState(() {
         _isLoading = false;
       });
     }
   }
-  
+
   // Retourner à l'écran de connexion
   void _navigateToLogin() {
-    context.go('/auth');
+    // Annuler le timer pour éviter les navigations multiples
+    _timer?.cancel();
+
+    // Utiliser Future.microtask pour éviter les problèmes de navigation pendant le build
+    Future.microtask(() {
+      if (mounted) {
+        context.go('/auth');
+      }
+    });
   }
 
   @override
@@ -214,12 +251,12 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> with 
                           children: [
                             // En-tête
                             _buildHeader(),
-                            
+
                             const SizedBox(height: 24),
-                            
+
                             // Message d'erreur
                             if (_errorMessage != null) _buildErrorMessage(),
-                            
+
                             // Message principal
                             Text(
                               AppConstants.emailVerificationMessage,
@@ -229,9 +266,9 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> with 
                                 color: AppTheme.mediumColor,
                               ),
                             ),
-                            
+
                             const SizedBox(height: 8),
-                            
+
                             // Afficher l'email
                             Text(
                               widget.email,
@@ -242,18 +279,18 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> with 
                                 color: AppTheme.secondaryColor,
                               ),
                             ),
-                            
+
                             const SizedBox(height: 32),
-                            
+
                             // Bouton pour vérifier l'email
                             PrimaryButton(
                               text: AppConstants.checkEmailButton,
                               onPressed: _checkEmailVerification,
                               isLoading: _isLoading,
                             ),
-                            
+
                             const SizedBox(height: 16),
-                            
+
                             // Bouton pour renvoyer l'email
                             OutlinedButton(
                               onPressed: _isLoading ? null : _resendVerificationEmail,
@@ -268,9 +305,9 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> with 
                                 ),
                               ),
                             ),
-                            
+
                             const SizedBox(height: 16),
-                            
+
                             // Lien pour retourner à la connexion
                             TextButton(
                               onPressed: _navigateToLogin,
@@ -295,7 +332,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> with 
       ),
     );
   }
-  
+
   // Construire l'en-tête
   Widget _buildHeader() {
     return Column(
@@ -322,7 +359,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> with 
           ),
         ),
         const SizedBox(height: 16),
-        
+
         // Titre
         const Text(
           AppConstants.emailVerificationTitle,
@@ -334,7 +371,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> with 
           ),
         ),
         const SizedBox(height: 8),
-        
+
         // Sous-titre
         const Text(
           AppConstants.emailVerificationSubtitle,
@@ -347,7 +384,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> with 
       ],
     );
   }
-  
+
   // Construire le message d'erreur
   Widget _buildErrorMessage() {
     return Column(

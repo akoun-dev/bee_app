@@ -70,25 +70,34 @@ class UserBottomNavigation extends StatelessWidget {
   void _onItemTapped(BuildContext context, int index) {
     if (index == currentIndex) return;
 
-    // Utiliser context.go() au lieu de context.push() pour éviter d'empiler les routes
-    // et permettre le retour arrière correct
+    // Stocker la route à naviguer
+    String route;
     switch (index) {
       case 0:
-        context.go('/dashboard');
+        route = '/dashboard';
         break;
       case 1:
-        context.go('/agents');
+        route = '/agents';
         break;
       case 2:
-        context.go('/history');
+        route = '/history';
         break;
       case 3:
-        context.go('/profile');
+        route = '/profile';
         break;
       case 4:
-        context.go('/settings');
+        route = '/settings';
         break;
+      default:
+        return;
     }
+
+    // Utiliser Future.microtask pour éviter les problèmes de navigation pendant le build
+    Future.microtask(() {
+      // Utiliser context.go() au lieu de context.push() pour éviter d'empiler les routes
+      // et permettre le retour arrière correct
+      context.go(route);
+    });
   }
 }
 

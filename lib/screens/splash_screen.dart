@@ -25,37 +25,50 @@ class _SplashScreenState extends State<SplashScreen> {
   // Vérifier l'état d'authentification et rediriger en conséquence
   Future<void> _checkAuthState() async {
     final authService = Provider.of<AuthService>(context, listen: false);
-    
+
     try {
       // Attendre un court délai pour afficher le splash screen
       await Future.delayed(const Duration(seconds: 2));
-      
+
       // Vérifier si l'utilisateur est déjà connecté
       final isLoggedIn = await authService.isUserLoggedIn();
-      
+
       if (!mounted) return;
-      
+
       if (isLoggedIn) {
         // Récupérer les données de l'utilisateur
         final userData = await authService.getCurrentUserData();
-        
+
         if (!mounted) return;
-        
+
         // Rediriger vers la page appropriée en fonction du statut d'administrateur
-        if (userData != null && userData.isAdmin) {
-          context.go('/admin/reservations');
-        } else {
-          context.go('/dashboard');
-        }
+        // Utiliser Future.microtask pour éviter les problèmes de navigation pendant le build
+        Future.microtask(() {
+          if (mounted) {
+            if (userData != null && userData.isAdmin) {
+              context.go('/admin/reservations');
+            } else {
+              context.go('/dashboard');
+            }
+          }
+        });
       } else {
         // Rediriger vers la page d'authentification
-        context.go('/auth');
+        // Utiliser Future.microtask pour éviter les problèmes de navigation pendant le build
+        Future.microtask(() {
+          if (mounted) {
+            context.go('/auth');
+          }
+        });
       }
     } catch (e) {
       // En cas d'erreur, rediriger vers la page d'authentification
-      if (mounted) {
-        context.go('/auth');
-      }
+      // Utiliser Future.microtask pour éviter les problèmes de navigation pendant le build
+      Future.microtask(() {
+        if (mounted) {
+          context.go('/auth');
+        }
+      });
     }
   }
 

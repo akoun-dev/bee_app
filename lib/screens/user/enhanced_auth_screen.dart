@@ -122,11 +122,16 @@ class _EnhancedAuthScreenState extends State<EnhancedAuthScreen> with SingleTick
 
           if (mounted) {
             // Redirection manuelle en fonction du statut d'administrateur
-            if (user.isAdmin) {
-              context.go('/admin/dashboard');
-            } else {
-              context.go('/dashboard');
-            }
+            // Utiliser Future.microtask pour éviter les problèmes de navigation pendant le build
+            Future.microtask(() {
+              if (mounted) {
+                if (user.isAdmin) {
+                  context.go('/admin/dashboard');
+                } else {
+                  context.go('/dashboard');
+                }
+              }
+            });
           }
         } catch (authError) {
           // Vérifier si l'erreur est liée à la vérification d'email
@@ -152,9 +157,12 @@ class _EnhancedAuthScreenState extends State<EnhancedAuthScreen> with SingleTick
                 await authService.sendEmailVerification();
 
                 // Rediriger vers l'écran de vérification d'email
-                if (mounted) {
-                  context.go('/verify-email?email=$email');
-                }
+                // Utiliser Future.microtask pour éviter les problèmes de navigation pendant le build
+                Future.microtask(() {
+                  if (mounted) {
+                    context.go('/verify-email?email=$email');
+                  }
+                });
                 return;
               } catch (innerError) {
                 // Si la connexion échoue pour une autre raison, relancer l'erreur originale
@@ -185,7 +193,12 @@ class _EnhancedAuthScreenState extends State<EnhancedAuthScreen> with SingleTick
           );
 
           // Redirection manuelle vers le tableau de bord
-          context.go('/dashboard');
+          // Utiliser Future.microtask pour éviter les problèmes de navigation pendant le build
+          Future.microtask(() {
+            if (mounted) {
+              context.go('/dashboard');
+            }
+          });
         }
       }
     } catch (e) {
@@ -209,7 +222,12 @@ class _EnhancedAuthScreenState extends State<EnhancedAuthScreen> with SingleTick
 
   // Naviguer vers l'écran de réinitialisation de mot de passe
   void _navigateToResetPassword() {
-    context.go('/reset-password');
+    // Utiliser Future.microtask pour éviter les problèmes de navigation pendant le build
+    Future.microtask(() {
+      if (mounted) {
+        context.go('/reset-password');
+      }
+    });
   }
 
   @override

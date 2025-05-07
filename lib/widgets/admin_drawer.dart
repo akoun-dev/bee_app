@@ -4,10 +4,81 @@ import 'package:provider/provider.dart';
 
 import '../services/auth_service.dart';
 import '../utils/theme.dart';
+import '../models/user_model.dart';
+import '../widgets/common_widgets.dart';
+
+// Peintre personnalisé pour créer un motif de grille
+class GridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 0.5
+      ..style = PaintingStyle.stroke;
+
+    // Dessiner des lignes horizontales
+    final horizontalLineCount = 10;
+    final horizontalSpacing = size.height / horizontalLineCount;
+    for (int i = 0; i <= horizontalLineCount; i++) {
+      final y = i * horizontalSpacing;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+
+    // Dessiner des lignes verticales
+    final verticalLineCount = 10;
+    final verticalSpacing = size.width / verticalLineCount;
+    for (int i = 0; i <= verticalLineCount; i++) {
+      final x = i * verticalSpacing;
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
 
 // Drawer de navigation pour les administrateurs
-class AdminDrawer extends StatelessWidget {
+class AdminDrawer extends StatefulWidget {
   const AdminDrawer({super.key});
+
+  @override
+  State<AdminDrawer> createState() => _AdminDrawerState();
+}
+
+class _AdminDrawerState extends State<AdminDrawer> {
+  UserModel? _currentUser;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  // Charger les données de l'utilisateur
+  Future<void> _loadUserData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final userData = await authService.getCurrentUserData();
+
+      if (mounted) {
+        setState(() {
+          _currentUser = userData;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   // Méthode pour se déconnecter
   Future<void> _signOut(BuildContext context) async {
@@ -101,50 +172,146 @@ class AdminDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Drawer(
       child: Column(
         children: [
           // En-tête du drawer
-          DrawerHeader(
-            decoration: BoxDecoration(
-              color: AppTheme.secondaryColor,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Container(
+            padding: EdgeInsets.zero,
+            child: Stack(
               children: [
-                // Logo ou icône
+                // Fond avec dégradé
                 Container(
-                  width: 60,
-                  height: 60,
+                  height: 200,
+                  width: double.infinity,
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.admin_panel_settings,
-                    color: AppTheme.secondaryColor,
-                    size: 36,
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Titre
-                const Text(
-                  'Administration',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppTheme.secondaryColor,
+                        AppTheme.secondaryColor.withAlpha(220),
+                        AppTheme.primaryColor,
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(50),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
                   ),
                 ),
 
-                // Sous-titre
-                const Text(
-                  'Panneau de contrôle',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
+                // Motif décoratif
+                Positioned.fill(
+                  child: Opacity(
+                    opacity: 0.1,
+                    child: CustomPaint(
+                      painter: GridPainter(),
+                    ),
+                  ),
+                ),
+
+                // Contenu
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 50, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Avatar et informations utilisateur
+                      _isLoading
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Row(
+                              children: [
+                                // Avatar
+                                UserAvatar(
+                                  imageUrl: _currentUser?.profileImageUrl,
+                                  name: _currentUser?.fullName,
+                                  size: 60,
+                                ),
+                                const SizedBox(width: 12),
+
+                                // Informations utilisateur
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _currentUser?.fullName ?? 'Administrateur',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        _currentUser?.email ?? '',
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 14,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                      const SizedBox(height: 20),
+
+                      // Titre et sous-titre
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.admin_panel_settings,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Administration',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 4),
+
+                      const Text(
+                        'Panneau de contrôle',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Bouton de déconnexion
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.logout,
+                      color: Colors.white,
+                    ),
+                    tooltip: 'Déconnexion',
+                    onPressed: () => _signOut(context),
                   ),
                 ),
               ],
@@ -226,29 +393,6 @@ class AdminDrawer extends StatelessWidget {
                   icon: Icons.account_circle,
                   title: 'Mon profil',
                   route: '/admin/profile',
-                ),
-              ],
-            ),
-          ),
-
-          // Pied du drawer avec déconnexion
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            child: Column(
-              children: [
-                const Divider(),
-                OutlinedButton.icon(
-                  onPressed: () => _signOut(context),
-                  icon: const Icon(Icons.exit_to_app, color: AppTheme.errorColor),
-                  label: const Text(
-                    'Déconnexion',
-                    style: TextStyle(color: AppTheme.errorColor),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    side: const BorderSide(color: AppTheme.errorColor),
-                    minimumSize: const Size(double.infinity, 0),
-                  ),
                 ),
               ],
             ),
