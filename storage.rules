@@ -1,0 +1,91 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Fonctions utilitaires
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    function isImageType() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isFileSizeUnder(maxSizeMB) {
+      return request.resource.size < maxSizeMB * 1024 * 1024;
+    }
+
+    // Images de profil des utilisateurs
+    match /users/{userId}/profile.jpg {
+      // Tout le monde peut voir les images de profil
+      allow read: if isAuthenticated();
+      // Seul l'utilisateur lui-même ou un admin peut modifier son image de profil
+      // L'image doit être de type image et moins de 5 MB
+      allow write: if (isOwner(userId) || isAdmin()) &&
+                     isImageType() &&
+                     isFileSizeUnder(5);
+    }
+
+    // Images de profil des agents
+    match /agents/{agentId}/profile.jpg {
+      // Tout le monde peut voir les images de profil des agents
+      allow read: if isAuthenticated();
+      // Seul l'admin peut modifier les images de profil des agents
+      // L'image doit être de type image et moins de 5 MB
+      allow write: if isAdmin() &&
+                     isImageType() &&
+                     isFileSizeUnder(5);
+    }
+
+    // Documents des agents (certificats, diplômes, etc.)
+    match /agents/{agentId}/documents/{document} {
+      // Tout le monde peut voir les documents des agents
+      allow read: if isAuthenticated();
+      // Seul l'admin peut modifier les documents des agents
+      // Le fichier doit être moins de 10 MB
+      allow write: if isAdmin() &&
+                     isFileSizeUnder(10);
+    }
+
+    // Pièces jointes des réservations
+    match /reservations/{reservationId}/{document} {
+      // Un utilisateur peut voir les pièces jointes de ses propres réservations
+      // Un agent peut voir les pièces jointes des réservations qui le concernent
+      // Un admin peut voir toutes les pièces jointes
+      allow read: if isAuthenticated() && (
+        firestore.get(/databases/(default)/documents/reservations/$(reservationId)).data.userId == request.auth.uid ||
+        firestore.get(/databases/(default)/documents/reservations/$(reservationId)).data.agentId == request.auth.uid ||
+        isAdmin()
+      );
+
+      // Un utilisateur peut ajouter des pièces jointes à ses propres réservations
+      // Un admin peut ajouter des pièces jointes à toutes les réservations
+      // Le fichier doit être moins de 10 MB
+      allow write: if isAuthenticated() &&
+                     isFileSizeUnder(10) && (
+        firestore.get(/databases/(default)/documents/reservations/$(reservationId)).data.userId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    // Rapports générés
+    match /reports/{reportId} {
+      // Seul l'admin peut lire/écrire les rapports
+      allow read, write: if isAdmin();
+    }
+
+    // Règles par défaut - refuser tout accès non spécifié
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

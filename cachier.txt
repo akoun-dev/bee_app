@@ -1,0 +1,74 @@
+CAHIER DES CHARGES – Application mobile Bee (Flutter + Firebase)
+🎯 Objectif principal
+Permettre à des utilisateurs de réserver des gardes du corps certifiés, consulter leurs profils complets, les noter après mission, et permettre à des administrateurs de gérer les agents et les réservations.
+
+🧩 Technologies utilisées
+Fonction	Technologie choisie
+Développement Mobile	Flutter (Dart)
+Authentification	Firebase Authentication
+Base de données	Firebase Firestore
+Stockage fichiers	Firebase Storage
+Notification (option)	Firebase Cloud Messaging (FCM)
+
+🔐 Interfaces et rôles
+🔹 Utilisateur (Client)
+Inscription / Connexion
+
+Voir les agents disponibles
+
+Consulter le profil détaillé d’un agent
+
+Réserver un agent pour une mission
+
+Voir l’historique de ses réservations
+
+Noter et commenter un agent après mission
+
+Modifier son profil
+
+🔹 Administrateur
+Connexion dédiée
+
+Valider ou refuser des réservations
+
+Gérer la base des agents (ajouter / modifier / supprimer)
+
+Visualiser les retours clients (notes & commentaires)
+
+Consulter les statistiques générales
+
+👤 Profil détaillé de l’agent
+Style proche de LinkedIn/Facebook avec une UI professionnelle :
+
+Section	Contenu attendu
+Photo	Grande photo de profil
+Identité	Nom, Âge, Sexe, Groupe sanguin, Profession
+Informations Pro	Antécédents, Niveau d’études, Agent certifié (oui/non), Matricule
+Évaluation	⭐⭐⭐⭐⭐ (note moyenne affichée), nombre de notes
+Commentaires	Liste des commentaires publics laissés par les utilisateurs
+
+
+Écrans de l'application
+Utilisateur :
+Authentification (inscription/login)
+
+Liste des agents
+
+Détail du profil agent (photo + infos + antécédents + note + commentaires)
+
+Réservation
+
+Historique des réservations
+
+Profil personnel
+
+Administrateur :
+Connexion
+
+Liste des réservations en attente
+
+Validation/réjection
+
+Gestion des agents
+
+Statistiques générales

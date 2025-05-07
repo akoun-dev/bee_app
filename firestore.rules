@@ -1,0 +1,107 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Fonctions utilitaires
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // Règles pour la collection users
+    match /users/{userId} {
+      // Tout le monde peut lire les profils utilisateurs
+      allow read: if isAuthenticated();
+      // Seul l'utilisateur lui-même ou un admin peut modifier son profil
+      allow write: if isOwner(userId) || isAdmin();
+
+      // Sous-collections des utilisateurs
+      match /notifications/{notificationId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+    }
+
+    // Règles pour la collection agents
+    match /agents/{agentId} {
+      // Tout le monde peut lire les profils des agents
+      allow read: if isAuthenticated();
+      // Seul l'admin peut créer/modifier/supprimer des agents
+      allow write: if isAdmin();
+    }
+
+    // Règles pour la collection reservations
+    match /reservations/{reservationId} {
+      // Un utilisateur peut lire ses propres réservations
+      // Un agent peut lire les réservations qui le concernent
+      // Un admin peut lire toutes les réservations
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.agentId == request.auth.uid ||
+        isAdmin()
+      );
+
+      // Un utilisateur peut créer une réservation pour lui-même
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
+
+      // Un utilisateur peut modifier/supprimer ses propres réservations
+      // Un admin peut modifier/supprimer toutes les réservations
+      allow update, delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    // Règles pour la collection settings
+    match /settings/{settingId} {
+      // Tout le monde peut lire les paramètres
+      allow read: if isAuthenticated();
+      // Seul l'admin peut modifier les paramètres
+      allow write: if isAdmin();
+    }
+
+    // Règles pour la collection reports
+    match /reports/{reportId} {
+      // Seul l'admin peut lire/écrire les rapports
+      allow read, write: if isAdmin();
+    }
+
+    // Règles pour la collection userPreferences
+    match /userPreferences/{userId} {
+      // Un utilisateur peut lire/écrire ses propres préférences
+      // Un admin peut lire/écrire toutes les préférences
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    // Règles pour la collection reviews
+    match /reviews/{reviewId} {
+      // Tout utilisateur authentifié peut lire les avis
+      allow read: if isAuthenticated();
+
+      // Un utilisateur peut créer un avis s'il est l'auteur
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
+
+      // Un utilisateur peut modifier/supprimer ses propres avis
+      // Un admin peut modifier/supprimer tous les avis
+      allow update, delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    // Règles par défaut - refuser tout accès non spécifié
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
