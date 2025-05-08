@@ -75,6 +75,14 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Règles pour la collection notifications
+    match /notifications/{notificationId} {
+      // Tout utilisateur authentifié peut lire les notifications
+      allow read: if isAuthenticated();
+      // Seul l'admin peut créer/modifier/supprimer des notifications
+      allow write: if isAdmin();
+    }
+
     // Règles pour la collection userPreferences
     match /userPreferences/{userId} {
       // Un utilisateur peut lire/écrire ses propres préférences

@@ -2,7 +2,7 @@
 
 class AppConstants {
   // Nom de l'application
-  static const String appName = 'Bee App';
+  static const String appName = 'ZIBENE SECURITY';
 
   // Messages d'erreur
   static const String errorGeneric = 'Une erreur est survenue. Veuillez réessayer.';

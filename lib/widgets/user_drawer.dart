@@ -42,7 +42,7 @@ class UserDrawer extends StatelessWidget {
                 
                 // Titre
                 const Text(
-                  'Bee App',
+                  'ZIBENE SECURITY',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,

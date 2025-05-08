@@ -331,10 +331,9 @@ class _EnhancedAuthScreenState extends State<EnhancedAuthScreen> with SingleTick
               ),
             ],
           ),
-          child: const Icon(
-            Icons.security,
-            size: 40,
-            color: AppTheme.secondaryColor,
+          child: Image.asset(
+            'assets/images/bee-logo.png',
+            fit: BoxFit.contain,
           ),
         ),
         const SizedBox(height: 16),

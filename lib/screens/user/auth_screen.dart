@@ -169,11 +169,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Logo ou titre
-                  const Icon(
-                    Icons.security,
-                    size: 80,
-                    color: AppTheme.primaryColor,
-                  ),
+                  Image.asset('assets/images/bee-logo.png', height: 80),
                   const SizedBox(height: 16),
                   Text(
                     AppConstants.appName,

@@ -69,7 +69,7 @@ class NotificationService {
     if (message.notification != null) {
       final androidDetails = AndroidNotificationDetails(
         'bee_app_channel',
-        'Notifications Bee App',
+        'Notifications ZIBENE SECURITY',
         channelDescription: 'Canal pour les notifications de l\'application Bee',
         importance: Importance.max,
         priority: Priority.high,
@@ -191,22 +191,32 @@ class NotificationService {
   // Récupérer l'historique des notifications envoyées
   Future<List<Map<String, dynamic>>> getSentNotifications() async {
     try {
+      // Utiliser une requête simple sans tri complexe pour éviter les problèmes d'index
       final snapshot = await _notificationsCollection
-          .orderBy('timestamp', descending: true)
           .limit(20)
           .get();
 
-      return snapshot.docs.map((doc) {
+      // Trier les résultats côté client
+      final notifications = snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
         return {
           'id': doc.id,
-          'title': data['title'],
-          'message': data['message'],
-          'targetType': data['targetType'],
-          'sentAt': data['sentAt'],
-          'status': data['status'],
+          'title': data['title'] ?? '',
+          'message': data['message'] ?? '',
+          'targetType': data['targetType'] ?? 'all',
+          'sentAt': data['sentAt'] ?? '',
+          'status': data['status'] ?? '',
+          // Stocker le timestamp pour le tri côté client
+          'timestamp': data['timestamp'] != null
+              ? (data['timestamp'] as Timestamp).toDate().millisecondsSinceEpoch
+              : DateTime.now().millisecondsSinceEpoch,
         };
       }).toList();
+
+      // Trier par timestamp décroissant
+      notifications.sort((a, b) => (b['timestamp'] as int).compareTo(a['timestamp'] as int));
+
+      return notifications;
     } catch (e) {
       if (kDebugMode) {
         print('Erreur lors de la récupération des notifications: ${e.toString()}');
