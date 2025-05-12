@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
 import '../utils/theme.dart';
-import 'dart:math' as math;
 
 // Écran de démarrage qui vérifie l'état d'authentification
 class SplashScreen extends StatefulWidget {

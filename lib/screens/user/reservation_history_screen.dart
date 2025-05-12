@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:go_router/go_router.dart';
 import '../../models/agent_model.dart';
 import '../../models/reservation_model.dart';
-import '../../models/review_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/reservation_card.dart';
+import '../../widgets/rating_dialog.dart';
 
 
 // Écran d'historique des réservations
@@ -79,130 +79,108 @@ class _ReservationHistoryScreenState extends State<ReservationHistoryScreen> {
     }
   }
 
-  // Afficher le dialogue d'évaluation
-  Future<void> _showRatingDialog(ReservationModel reservation) async {
-    double rating = 5.0;
-    final commentController = TextEditingController();
-
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Évaluer l\'agent'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Comment évaluez-vous cette mission ?'),
-              const SizedBox(height: 16),
-              RatingBar.builder(
-                initialRating: rating,
-                minRating: 1,
-                direction: Axis.horizontal,
-                allowHalfRating: true,
-                itemCount: 5,
-                itemSize: 40,
-                itemBuilder: (context, _) => const Icon(
-                  Icons.star,
-                  color: AppTheme.secondaryColor,
-                ),
-                onRatingUpdate: (value) {
-                  rating = value;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: commentController,
-                decoration: const InputDecoration(
-                  labelText: 'Commentaire (optionnel)',
-                  hintText: 'Partagez votre expérience...',
-                ),
-                maxLines: 3,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop({
-              'rating': rating,
-              'comment': commentController.text.trim(),
-            }),
-            child: const Text('Soumettre'),
-          ),
-        ],
-      ),
-    );
-
-    // Nettoyer le contrôleur
-    commentController.dispose();
-
-    // Traiter le résultat
-    if (result != null) {
-      await _submitRating(
-        reservation,
-        result['rating'],
-        result['comment'],
-      );
-    }
-  }
-
-  // Soumettre une évaluation
-  Future<void> _submitRating(
-    ReservationModel reservation,
-    double rating,
-    String comment,
-  ) async {
+  // Marquer une réservation comme terminée
+  Future<void> _completeReservation(ReservationModel reservation) async {
     try {
-      final authService = Provider.of<AuthService>(context, listen: false);
       final databaseService = Provider.of<DatabaseService>(context, listen: false);
 
-      final currentUser = authService.currentUser;
-      if (currentUser == null) {
-        throw Exception('Vous devez être connecté pour évaluer un agent');
-      }
-
-      // Récupérer les données de l'utilisateur
-      final userData = await authService.getCurrentUserData();
-
-      // Créer l'avis
-      final review = ReviewModel(
-        id: '', // Sera généré par Firestore
-        userId: currentUser.uid,
-        agentId: reservation.agentId,
-        reservationId: reservation.id,
-        rating: rating,
-        comment: comment.isEmpty ? 'Aucun commentaire' : comment,
-        createdAt: DateTime.now(),
-        userFullName: userData?.fullName,
-        userProfileImageUrl: userData?.profileImageUrl,
-      );
-
-      // Ajouter l'avis à la base de données
-      await databaseService.addReview(review);
+      // Mettre à jour le statut de la réservation
+      final updatedReservation = reservation.complete();
+      await databaseService.updateReservation(updatedReservation);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(AppConstants.successReview),
+            content: Text('Réservation marquée comme terminée'),
             backgroundColor: AppTheme.accentColor,
           ),
         );
+
+        // Récupérer les détails de l'agent
+        final agent = await _getAgentDetails(reservation.agentId);
+        if (agent != null && mounted) {
+          // Afficher directement le dialogue d'évaluation
+          _showRatingDialogWithAgent(updatedReservation, agent);
+        } else {
+          // Fallback: demander à l'utilisateur s'il souhaite évaluer l'agent maintenant
+          _showEvaluationPrompt(updatedReservation);
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur lors de l\'évaluation: ${e.toString()}'),
+            content: Text('Erreur lors de la mise à jour: ${e.toString()}'),
             backgroundColor: AppTheme.errorColor,
           ),
         );
       }
     }
   }
+
+  // Afficher une invite pour évaluer l'agent
+  Future<void> _showEvaluationPrompt(ReservationModel reservation) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Évaluer l\'agent'),
+        content: const Text('Souhaitez-vous évaluer l\'agent maintenant ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Plus tard'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+            ),
+            child: const Text('Évaluer maintenant'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && mounted) {
+      // Naviguer vers l'écran d'évaluation en utilisant GoRouter
+      context.go('/review/${reservation.id}');
+    }
+  }
+
+  // Afficher l'écran d'évaluation
+  Future<void> _showRatingDialog(ReservationModel reservation) async {
+    // Récupérer les détails de l'agent
+    final agent = await _getAgentDetails(reservation.agentId);
+    if (agent != null && mounted) {
+      // Afficher le dialogue d'évaluation
+      _showRatingDialogWithAgent(reservation, agent);
+    } else {
+      // Fallback: naviguer vers l'écran d'évaluation en utilisant GoRouter
+      if (mounted) {
+        context.go('/review/${reservation.id}');
+      }
+    }
+  }
+
+  // Afficher le dialogue d'évaluation avec les détails de l'agent
+  Future<void> _showRatingDialogWithAgent(ReservationModel reservation, AgentModel agent) async {
+    await showDialog(
+      context: context,
+      builder: (context) => RatingDialog(
+        reservation: reservation,
+        agent: agent,
+        onSuccess: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Merci pour votre évaluation !'),
+              backgroundColor: AppTheme.accentColor,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -253,7 +231,7 @@ class _ReservationHistoryScreenState extends State<ReservationHistoryScreen> {
                 Container(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withOpacity(0.05),
+                    color: Theme.of(context).primaryColor.withAlpha(13),
                     borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(24),
                       bottomRight: Radius.circular(24),
@@ -384,6 +362,10 @@ class _ReservationHistoryScreenState extends State<ReservationHistoryScreen> {
                                 onCancelPressed: reservation.status == ReservationModel.statusPending ||
                                                 reservation.status == ReservationModel.statusApproved
                                     ? () => _cancelReservation(reservation)
+                                    : null,
+                                onCompletePressed: reservation.status == ReservationModel.statusApproved &&
+                                                  reservation.endDate.isBefore(DateTime.now())
+                                    ? () => _completeReservation(reservation)
                                     : null,
                               );
                             },

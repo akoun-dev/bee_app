@@ -126,6 +126,66 @@ class DatabaseService {
             .toList());
   }
 
+  // Récupérer les agents certifiés
+  Stream<List<AgentModel>> getCertifiedAgents() {
+    return _agentsCollection
+        .where('isCertified', isEqualTo: true)
+        .orderBy('fullName')
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => AgentModel.fromMap(
+                doc.data() as Map<String, dynamic>, doc.id))
+            .toList());
+  }
+
+  // Récupérer les agents disponibles et certifiés
+  Stream<List<AgentModel>> getAvailableCertifiedAgents() {
+    return _agentsCollection
+        .where('isAvailable', isEqualTo: true)
+        .where('isCertified', isEqualTo: true)
+        .orderBy('fullName')
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => AgentModel.fromMap(
+                doc.data() as Map<String, dynamic>, doc.id))
+            .toList());
+  }
+
+  // Récupérer les agents par profession
+  Stream<List<AgentModel>> getAgentsByProfession(String profession) {
+    return _agentsCollection
+        .where('profession', isEqualTo: profession)
+        .orderBy('fullName')
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => AgentModel.fromMap(
+                doc.data() as Map<String, dynamic>, doc.id))
+            .toList());
+  }
+
+  // Récupérer les professions disponibles
+  Future<List<String>> getAvailableProfessions() async {
+    try {
+      final querySnapshot = await _agentsCollection.get();
+
+      // Extraire toutes les professions uniques
+      final Set<String> professions = {};
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        if (data['profession'] != null && data['profession'].toString().isNotEmpty) {
+          professions.add(data['profession'].toString());
+        }
+      }
+
+      // Convertir en liste et trier
+      final result = professions.toList()..sort();
+      return result;
+    } catch (e) {
+      // Logger.error('Erreur lors de la récupération des professions: ${e.toString()}');
+      return [];
+    }
+  }
+
   // Récupérer un agent par ID
   Future<AgentModel?> getAgent(String agentId) async {
     try {
@@ -139,6 +199,28 @@ class DatabaseService {
     } catch (e) {
       // Utiliser un logger en production au lieu de print
       // Logger.error('Erreur lors de la récupération de l\'agent: ${e.toString()}');
+      return null;
+    }
+  }
+
+  // Récupérer un agent par matricule
+  Future<AgentModel?> getAgentByMatricule(String matricule) async {
+    try {
+      final querySnapshot = await _agentsCollection
+          .where('matricule', isEqualTo: matricule)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isEmpty) return null;
+
+      final doc = querySnapshot.docs.first;
+      return AgentModel.fromMap(
+        doc.data() as Map<String, dynamic>,
+        doc.id
+      );
+    } catch (e) {
+      // Utiliser un logger en production au lieu de print
+      // Logger.error('Erreur lors de la récupération de l\'agent par matricule: ${e.toString()}');
       return null;
     }
   }
@@ -206,6 +288,86 @@ class DatabaseService {
             .map((doc) => ReservationModel.fromMap(
                 doc.data() as Map<String, dynamic>, doc.id))
             .toList());
+  }
+
+  // Récupérer les réservations en cours (approuvées et non terminées)
+  Stream<List<ReservationModel>> getActiveReservations() {
+    final now = DateTime.now();
+
+    return _reservationsCollection
+        .where('status', isEqualTo: ReservationModel.statusApproved)
+        .orderBy('startDate')
+        .snapshots()
+        .map((snapshot) {
+          final reservations = snapshot.docs
+              .map((doc) => ReservationModel.fromMap(
+                  doc.data() as Map<String, dynamic>, doc.id))
+              .toList();
+
+          // Filtrer pour ne garder que les réservations dont la date de fin est dans le futur
+          // et la date de début est passée (réservations en cours)
+          return reservations.where((reservation) =>
+            reservation.startDate.isBefore(now) &&
+            reservation.endDate.isAfter(now)).toList();
+        });
+  }
+
+  // Vérifier si un agent a des réservations en cours
+  Future<bool> hasActiveReservations(String agentId) async {
+    try {
+      // Rechercher les réservations qui sont en cours ou à venir
+      final querySnapshot = await _reservationsCollection
+          .where('agentId', isEqualTo: agentId)
+          .where('status', whereIn: [
+            ReservationModel.statusPending,
+            ReservationModel.statusApproved
+          ])
+          .get();
+
+      // Vérifier si des réservations existent
+      return querySnapshot.docs.isNotEmpty;
+    } catch (e) {
+      // Logger.error('Erreur lors de la vérification des réservations: ${e.toString()}');
+      return false;
+    }
+  }
+
+  // Récupérer les agents qui ont des réservations en cours
+  Stream<List<AgentModel>> getAgentsWithReservations() async* {
+    try {
+      // Récupérer tous les agents
+      final agents = await _agentsCollection.get();
+
+      // Récupérer toutes les réservations actives
+      final activeReservations = await _reservationsCollection
+          .where('status', whereIn: [
+            ReservationModel.statusPending,
+            ReservationModel.statusApproved
+          ])
+          .get();
+
+      // Créer un ensemble des IDs d'agents avec des réservations actives
+      final Set<String> agentIdsWithReservations = {};
+      for (var doc in activeReservations.docs) {
+        final reservation = ReservationModel.fromMap(
+          doc.data() as Map<String, dynamic>,
+          doc.id
+        );
+        agentIdsWithReservations.add(reservation.agentId);
+      }
+
+      // Filtrer les agents qui ont des réservations actives
+      final agentsWithReservations = agents.docs
+          .where((doc) => agentIdsWithReservations.contains(doc.id))
+          .map((doc) => AgentModel.fromMap(
+              doc.data() as Map<String, dynamic>, doc.id))
+          .toList();
+
+      yield agentsWithReservations;
+    } catch (e) {
+      // Logger.error('Erreur lors de la récupération des agents avec réservations: ${e.toString()}');
+      yield [];
+    }
   }
 
   // Récupérer une réservation par ID

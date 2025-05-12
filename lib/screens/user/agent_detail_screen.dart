@@ -157,23 +157,23 @@ class _AgentDetailScreenState extends State<AgentDetailScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: AppTheme.accentColor.withAlpha(25),
+                          color: AppTheme.infoColor.withAlpha(25),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppTheme.accentColor),
+                          border: Border.all(color: AppTheme.infoColor),
                         ),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
                               Icons.verified,
-                              color: AppTheme.accentColor,
+                              color: AppTheme.infoColor,
                               size: 16,
                             ),
                             SizedBox(width: 4),
                             Text(
                               'Certifié',
                               style: TextStyle(
-                                color: AppTheme.accentColor,
+                                color: AppTheme.infoColor,
                                 fontWeight: FontWeight.w500,
                                 fontSize: 14,
                               ),
@@ -193,6 +193,28 @@ class _AgentDetailScreenState extends State<AgentDetailScreen> {
                     color: AppTheme.mediumColor,
                     fontSize: 16,
                   ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // Matricule
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.badge_outlined,
+                      size: 16,
+                      color: AppTheme.mediumColor,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Matricule: ${_agent!.matricule}',
+                      style: const TextStyle(
+                        color: AppTheme.mediumColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 16),

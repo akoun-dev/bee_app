@@ -32,6 +32,8 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
   DateTime? _startDateFilter;
   DateTime? _endDateFilter;
   String _searchQuery = '';
+  bool _showActiveOnly = true; // Afficher uniquement les réservations en cours
+  bool _showUpcomingOnly = false; // Afficher uniquement les réservations à venir
 
   @override
   Widget build(BuildContext context) {
@@ -74,8 +76,163 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
             ),
           ),
 
-          // Filtres actifs
-          if (_statusFilter != 'all' || _startDateFilter != null || _endDateFilter != null)
+          // Filtres rapides
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  // Filtre pour toutes les réservations
+                  FilterChip(
+                    label: const Text('Toutes'),
+                    selected: _statusFilter == 'all' && !_showActiveOnly && !_showUpcomingOnly,
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() {
+                          _statusFilter = 'all';
+                          _showActiveOnly = false;
+                          _showUpcomingOnly = false;
+                        });
+                      }
+                    },
+                    avatar: const Icon(
+                      Icons.list,
+                      color: Colors.grey,
+                      size: 18,
+                    ),
+                    backgroundColor: Colors.grey[200],
+                    selectedColor: AppTheme.primaryColor,
+                    checkmarkColor: Colors.white,
+                    labelStyle: TextStyle(
+                      color: _statusFilter == 'all' && !_showActiveOnly && !_showUpcomingOnly ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Filtre pour les réservations en cours
+                  FilterChip(
+                    label: const Text('En cours'),
+                    selected: _showActiveOnly,
+                    onSelected: (selected) {
+                      setState(() {
+                        _showActiveOnly = selected;
+                        if (selected) {
+                          _showUpcomingOnly = false;
+                          _statusFilter = ReservationModel.statusApproved;
+                        } else if (!_showUpcomingOnly) {
+                          _statusFilter = 'all';
+                        }
+                      });
+                    },
+                    avatar: Icon(
+                      Icons.event_available,
+                      color: _showActiveOnly ? Colors.white : Colors.grey,
+                      size: 18,
+                    ),
+                    backgroundColor: Colors.grey[200],
+                    selectedColor: Colors.green,
+                    checkmarkColor: Colors.white,
+                    labelStyle: TextStyle(
+                      color: _showActiveOnly ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Filtre pour les réservations à venir
+                  FilterChip(
+                    label: const Text('À venir'),
+                    selected: _showUpcomingOnly,
+                    onSelected: (selected) {
+                      setState(() {
+                        _showUpcomingOnly = selected;
+                        if (selected) {
+                          _showActiveOnly = false;
+                          _statusFilter = ReservationModel.statusApproved;
+                          _startDateFilter = DateTime.now();
+                        } else if (!_showActiveOnly) {
+                          _statusFilter = 'all';
+                          _startDateFilter = null;
+                        }
+                      });
+                    },
+                    avatar: Icon(
+                      Icons.event,
+                      color: _showUpcomingOnly ? Colors.white : Colors.grey,
+                      size: 18,
+                    ),
+                    backgroundColor: Colors.grey[200],
+                    selectedColor: Colors.blue,
+                    checkmarkColor: Colors.white,
+                    labelStyle: TextStyle(
+                      color: _showUpcomingOnly ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Filtre pour les réservations en attente
+                  FilterChip(
+                    label: const Text('En attente'),
+                    selected: _statusFilter == ReservationModel.statusPending,
+                    onSelected: (selected) {
+                      setState(() {
+                        if (selected) {
+                          _statusFilter = ReservationModel.statusPending;
+                          _showActiveOnly = false;
+                          _showUpcomingOnly = false;
+                        } else {
+                          _statusFilter = 'all';
+                        }
+                      });
+                    },
+                    avatar: Icon(
+                      Icons.hourglass_empty,
+                      color: _statusFilter == ReservationModel.statusPending ? Colors.white : Colors.grey,
+                      size: 18,
+                    ),
+                    backgroundColor: Colors.grey[200],
+                    selectedColor: Colors.orange,
+                    checkmarkColor: Colors.white,
+                    labelStyle: TextStyle(
+                      color: _statusFilter == ReservationModel.statusPending ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Filtre pour les réservations terminées
+                  FilterChip(
+                    label: const Text('Terminées'),
+                    selected: _statusFilter == ReservationModel.statusCompleted,
+                    onSelected: (selected) {
+                      setState(() {
+                        if (selected) {
+                          _statusFilter = ReservationModel.statusCompleted;
+                          _showActiveOnly = false;
+                          _showUpcomingOnly = false;
+                        } else {
+                          _statusFilter = 'all';
+                        }
+                      });
+                    },
+                    avatar: Icon(
+                      Icons.check_circle,
+                      color: _statusFilter == ReservationModel.statusCompleted ? Colors.white : Colors.grey,
+                      size: 18,
+                    ),
+                    backgroundColor: Colors.grey[200],
+                    selectedColor: Colors.green,
+                    checkmarkColor: Colors.white,
+                    labelStyle: TextStyle(
+                      color: _statusFilter == ReservationModel.statusCompleted ? Colors.white : Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Filtres actifs supplémentaires (dates)
+          if (_startDateFilter != null || _endDateFilter != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: SingleChildScrollView(
@@ -88,40 +245,75 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
 
           // Liste des réservations
           Expanded(
-            child: StreamBuilder<List<ReservationModel>>(
-              stream: databaseService.getAllReservations(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const LoadingIndicator(message: 'Chargement des réservations...');
-                }
+            child: _showActiveOnly
+                ? StreamBuilder<List<ReservationModel>>(
+                    stream: databaseService.getActiveReservations(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const LoadingIndicator(message: 'Chargement des réservations en cours...');
+                      }
 
-                if (snapshot.hasError) {
-                  return ErrorMessage(
-                    message: 'Erreur: ${snapshot.error}',
-                    onRetry: () => setState(() {}),
-                  );
-                }
+                      if (snapshot.hasError) {
+                        return ErrorMessage(
+                          message: 'Erreur: ${snapshot.error}',
+                          onRetry: () => setState(() {}),
+                        );
+                      }
 
-                final reservations = snapshot.data ?? [];
-                final filteredReservations = _filterReservations(reservations);
+                      final reservations = snapshot.data ?? [];
+                      final filteredReservations = _filterReservations(reservations);
 
-                if (filteredReservations.isEmpty) {
-                  return const EmptyMessage(
-                    message: 'Aucune réservation trouvée',
-                    icon: Icons.event_busy,
-                  );
-                }
+                      if (filteredReservations.isEmpty) {
+                        return const EmptyMessage(
+                          message: 'Aucune réservation en cours trouvée',
+                          icon: Icons.event_busy,
+                        );
+                      }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: filteredReservations.length,
-                  itemBuilder: (context, index) {
-                    final reservation = filteredReservations[index];
-                    return _buildReservationItem(reservation);
-                  },
-                );
-              },
-            ),
+                      return ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: filteredReservations.length,
+                        itemBuilder: (context, index) {
+                          final reservation = filteredReservations[index];
+                          return _buildReservationItem(reservation);
+                        },
+                      );
+                    },
+                  )
+                : StreamBuilder<List<ReservationModel>>(
+                    stream: databaseService.getAllReservations(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const LoadingIndicator(message: 'Chargement des réservations...');
+                      }
+
+                      if (snapshot.hasError) {
+                        return ErrorMessage(
+                          message: 'Erreur: ${snapshot.error}',
+                          onRetry: () => setState(() {}),
+                        );
+                      }
+
+                      final reservations = snapshot.data ?? [];
+                      final filteredReservations = _filterReservations(reservations);
+
+                      if (filteredReservations.isEmpty) {
+                        return const EmptyMessage(
+                          message: 'Aucune réservation trouvée',
+                          icon: Icons.event_busy,
+                        );
+                      }
+
+                      return ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: filteredReservations.length,
+                        itemBuilder: (context, index) {
+                          final reservation = filteredReservations[index];
+                          return _buildReservationItem(reservation);
+                        },
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -130,10 +322,77 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
 
   // Filtrer les réservations en fonction des critères
   List<ReservationModel> _filterReservations(List<ReservationModel> reservations) {
-    return reservations.where((reservation) {
+    final now = DateTime.now();
+
+    // Trier les réservations pour mettre en avant les priorités
+    List<ReservationModel> sortedReservations = List.from(reservations);
+
+    // Si on affiche toutes les réservations, trier pour mettre en avant les priorités
+    if (_statusFilter == 'all' && !_showActiveOnly && !_showUpcomingOnly) {
+      sortedReservations.sort((a, b) {
+        // Priorité 1: Réservations en attente
+        if (a.status == ReservationModel.statusPending && b.status != ReservationModel.statusPending) {
+          return -1;
+        }
+        if (a.status != ReservationModel.statusPending && b.status == ReservationModel.statusPending) {
+          return 1;
+        }
+
+        // Priorité 2: Réservations approuvées en cours
+        bool aIsActive = a.status == ReservationModel.statusApproved &&
+                         a.startDate.isBefore(now) &&
+                         a.endDate.isAfter(now);
+        bool bIsActive = b.status == ReservationModel.statusApproved &&
+                         b.startDate.isBefore(now) &&
+                         b.endDate.isAfter(now);
+
+        if (aIsActive && !bIsActive) return -1;
+        if (!aIsActive && bIsActive) return 1;
+
+        // Priorité 3: Réservations approuvées à venir
+        bool aIsUpcoming = a.status == ReservationModel.statusApproved &&
+                           a.startDate.isAfter(now);
+        bool bIsUpcoming = b.status == ReservationModel.statusApproved &&
+                           b.startDate.isAfter(now);
+
+        if (aIsUpcoming && !bIsUpcoming) return -1;
+        if (!aIsUpcoming && bIsUpcoming) return 1;
+
+        // Priorité 4: Par date (les plus récentes d'abord)
+        return b.createdAt.compareTo(a.createdAt);
+      });
+    }
+
+    return sortedReservations.where((reservation) {
       // Filtre par statut
       if (_statusFilter != 'all' && reservation.status != _statusFilter) {
         return false;
+      }
+
+      // Filtre pour les réservations en cours
+      if (_showActiveOnly) {
+        // Vérifier que la réservation est approuvée et en cours
+        if (reservation.status != ReservationModel.statusApproved) {
+          return false;
+        }
+
+        // Vérifier que la réservation est en cours (a commencé et n'est pas terminée)
+        if (reservation.startDate.isAfter(now) || reservation.endDate.isBefore(now)) {
+          return false;
+        }
+      }
+
+      // Filtre pour les réservations à venir
+      if (_showUpcomingOnly) {
+        // Vérifier que la réservation est approuvée et à venir
+        if (reservation.status != ReservationModel.statusApproved) {
+          return false;
+        }
+
+        // Vérifier que la réservation n'a pas encore commencé
+        if (!reservation.startDate.isAfter(now)) {
+          return false;
+        }
       }
 
       // Filtre par date de début
@@ -158,22 +417,10 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
     }).toList();
   }
 
-  // Construire les filtres actifs
+  // Construire les filtres actifs (uniquement pour les dates)
   List<Widget> _buildActiveFilters() {
     final List<Widget> filters = [];
     final dateFormat = DateFormat('dd/MM/yyyy');
-
-    // Filtre de statut
-    if (_statusFilter != 'all') {
-      filters.add(
-        Chip(
-          label: Text(_getStatusText(_statusFilter)),
-          deleteIcon: const Icon(Icons.close, size: 16),
-          onDeleted: () => setState(() => _statusFilter = 'all'),
-          backgroundColor: AppTheme.primaryColor.withAlpha(50),
-        ),
-      );
-    }
 
     // Filtre de date de début
     if (_startDateFilter != null) {
@@ -181,7 +428,12 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
         Chip(
           label: Text('Après ${dateFormat.format(_startDateFilter!)}'),
           deleteIcon: const Icon(Icons.close, size: 16),
-          onDeleted: () => setState(() => _startDateFilter = null),
+          onDeleted: () => setState(() {
+            _startDateFilter = null;
+            if (_showUpcomingOnly) {
+              _showUpcomingOnly = false;
+            }
+          }),
           backgroundColor: AppTheme.accentColor.withAlpha(50),
         ),
       );
@@ -200,24 +452,6 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
     }
 
     return filters;
-  }
-
-  // Obtenir le texte du statut
-  String _getStatusText(String status) {
-    switch (status) {
-      case 'pending':
-        return AppConstants.pending;
-      case 'approved':
-        return AppConstants.approved;
-      case 'rejected':
-        return AppConstants.rejected;
-      case 'completed':
-        return AppConstants.completed;
-      case 'cancelled':
-        return AppConstants.cancelled;
-      default:
-        return status;
-    }
   }
 
   // Construire un élément de réservation
@@ -484,16 +718,8 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
                         child: Text(AppConstants.approved),
                       ),
                       DropdownMenuItem(
-                        value: ReservationModel.statusRejected,
-                        child: Text(AppConstants.rejected),
-                      ),
-                      DropdownMenuItem(
                         value: ReservationModel.statusCompleted,
                         child: Text(AppConstants.completed),
-                      ),
-                      DropdownMenuItem(
-                        value: ReservationModel.statusCancelled,
-                        child: Text(AppConstants.cancelled),
                       ),
                     ],
                     onChanged: (value) {
@@ -580,6 +806,8 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
                 _statusFilter = 'all';
                 _startDateFilter = null;
                 _endDateFilter = null;
+                _showActiveOnly = false;
+                _showUpcomingOnly = false;
               });
               Navigator.pop(context);
             },

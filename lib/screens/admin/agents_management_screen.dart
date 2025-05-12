@@ -25,6 +25,7 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
   // État
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+  bool _showOnlyWithReservations = false;
 
   @override
   void initState() {
@@ -432,6 +433,121 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erreur lors de la mise à jour de l\'agent: ${e.toString()}'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    }
+  }
+
+  // Basculer le statut de certification d'un agent
+  Future<void> _toggleCertification(AgentModel agent) async {
+    try {
+      final databaseService = Provider.of<DatabaseService>(context, listen: false);
+
+      // Créer un nouvel agent avec le statut de certification inversé
+      final updatedAgent = agent.copyWith(
+        isCertified: !agent.isCertified,
+      );
+
+      // Mettre à jour l'agent dans la base de données
+      await databaseService.updateAgent(updatedAgent);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              updatedAgent.isCertified
+                ? 'Agent certifié avec succès'
+                : 'Certification de l\'agent retirée'
+            ),
+            backgroundColor: updatedAgent.isCertified
+                ? AppTheme.infoColor
+                : Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la mise à jour de la certification: ${e.toString()}'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    }
+  }
+
+  // Basculer la disponibilité d'un agent
+  Future<void> _toggleAvailability(AgentModel agent) async {
+    try {
+      final databaseService = Provider.of<DatabaseService>(context, listen: false);
+
+      // Si on essaie de rendre l'agent indisponible, vérifier s'il a des réservations en cours
+      if (agent.isAvailable) {
+        final hasActiveReservations = await databaseService.hasActiveReservations(agent.id);
+
+        if (hasActiveReservations) {
+          if (mounted) {
+            // Afficher une boîte de dialogue pour informer l'administrateur
+            final result = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Agent avec réservations en cours'),
+                content: const Text(
+                  'Cet agent a des réservations en cours ou en attente. '
+                  'Voulez-vous quand même le marquer comme indisponible?'
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('Annuler'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                    ),
+                    child: const Text('Marquer indisponible'),
+                  ),
+                ],
+              ),
+            );
+
+            // Si l'administrateur annule, ne pas continuer
+            if (result != true) return;
+          }
+        }
+      }
+
+      // Créer un nouvel agent avec le statut de disponibilité inversé
+      final updatedAgent = agent.copyWith(
+        isAvailable: !agent.isAvailable,
+      );
+
+      // Mettre à jour l'agent dans la base de données
+      await databaseService.updateAgent(updatedAgent);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              updatedAgent.isAvailable
+                ? 'Agent marqué comme disponible'
+                : 'Agent marqué comme indisponible'
+            ),
+            backgroundColor: updatedAgent.isAvailable
+                ? Colors.green
+                : Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la mise à jour de la disponibilité: ${e.toString()}'),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -943,7 +1059,7 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
               style: TextStyle(fontSize: 12),
             ),
             value: isCertified,
-            activeColor: AppTheme.accentColor,
+            activeColor: AppTheme.infoColor,
             onChanged: (value) {
               setState(() {
                 isCertified = value;
@@ -951,7 +1067,7 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
             },
             secondary: Icon(
               Icons.verified,
-              color: isCertified ? AppTheme.accentColor : AppTheme.mediumColor,
+              color: isCertified ? AppTheme.infoColor : AppTheme.mediumColor,
             ),
           ),
         ),
@@ -1049,166 +1165,294 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
       drawer: const AdminDrawer(),
       body: Column(
         children: [
-          // Barre de recherche
+          // Barre de recherche et filtres
           Padding(
             padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Rechercher un agent...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() {
-                            _searchQuery = '';
-                          });
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+            child: Column(
+              children: [
+                TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Rechercher un agent...',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {
+                                _searchQuery = '';
+                              });
+                            },
+                          )
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
                 ),
-              ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
+
+                const SizedBox(height: 8),
+
+                // Filtres
+                Row(
+                  children: [
+                    // Filtre pour les agents en réservation
+                    FilterChip(
+                      label: const Text('Agents en réservation'),
+                      selected: _showOnlyWithReservations,
+                      onSelected: (selected) {
+                        setState(() {
+                          _showOnlyWithReservations = selected;
+                        });
+                      },
+                      avatar: Icon(
+                        Icons.event_busy,
+                        color: _showOnlyWithReservations ? Colors.white : Colors.grey,
+                        size: 18,
+                      ),
+                      backgroundColor: Colors.grey[200],
+                      selectedColor: AppTheme.primaryColor,
+                      checkmarkColor: Colors.white,
+                      labelStyle: TextStyle(
+                        color: _showOnlyWithReservations ? Colors.white : Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
 
           // Liste des agents
           Expanded(
-            child: StreamBuilder<List<AgentModel>>(
-              stream: databaseService.getAgents(),
-              builder: (context, snapshot) {
-                // Afficher un indicateur de chargement
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const LoadingIndicator(
-                    message: 'Chargement des agents...',
-                  );
-                }
-
-                // Afficher un message d'erreur
-                if (snapshot.hasError) {
-                  return ErrorMessage(
-                    message: 'Erreur: ${snapshot.error}',
-                    onRetry: () => setState(() {}),
-                  );
-                }
-
-                // Récupérer et filtrer les agents
-                final agents = snapshot.data ?? [];
-                final filteredAgents = _filterAgents(agents);
-
-                // Afficher un message si aucun agent n'est trouvé
-                if (filteredAgents.isEmpty) {
-                  return const EmptyMessage(
-                    message: 'Aucun agent trouvé',
-                    icon: Icons.person_off,
-                  );
-                }
-
-                // Afficher la liste des agents
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: filteredAgents.length,
-                  itemBuilder: (context, index) {
-                    final agent = filteredAgents[index];
-
-                    return Dismissible(
-                      key: Key(agent.id),
-                      direction: DismissDirection.endToStart,
-                      background: Container(
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.only(right: 20),
-                        color: AppTheme.errorColor,
-                        child: const Icon(
-                          Icons.delete,
-                          color: Colors.white,
-                        ),
-                      ),
-                      confirmDismiss: (direction) async {
-                        return await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Confirmer la suppression'),
-                            content: Text('Êtes-vous sûr de vouloir supprimer l\'agent ${agent.fullName} ?'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(context).pop(false),
-                                child: const Text('Annuler'),
-                              ),
-                              ElevatedButton(
-                                onPressed: () => Navigator.of(context).pop(true),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppTheme.errorColor,
-                                ),
-                                child: const Text('Supprimer'),
-                              ),
-                            ],
-                          ),
+            child: _showOnlyWithReservations
+                ? StreamBuilder<List<AgentModel>>(
+                    stream: databaseService.getAgentsWithReservations(),
+                    builder: (context, snapshot) {
+                      // Afficher un indicateur de chargement
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const LoadingIndicator(
+                          message: 'Chargement des agents en réservation...',
                         );
-                      },
-                      onDismissed: (direction) {
-                        _deleteAgent(agent);
-                      },
-                      child: Card(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        child: Column(
-                          children: [
-                            // Carte d'agent
-                            AgentCard(
-                              agent: agent,
-                              onTap: () => _showAgentFormDialog(agent: agent),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.arrow_forward),
-                                onPressed: () => context.go('/agent/${agent.id}'),
-                              ),
-                            ),
+                      }
 
-                            // Boutons d'action
-                            Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  // Bouton de modification
-                                  IconButton(
-                                    icon: const Icon(Icons.edit),
-                                    onPressed: () => _showAgentFormDialog(agent: agent),
-                                    tooltip: AppConstants.editAgent,
-                                  ),
-                                  // Bouton de suppression
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.delete,
-                                      color: AppTheme.errorColor,
-                                    ),
-                                    onPressed: () => _deleteAgent(agent),
-                                    tooltip: AppConstants.deleteAgent,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+                      // Afficher un message d'erreur
+                      if (snapshot.hasError) {
+                        return ErrorMessage(
+                          message: 'Erreur: ${snapshot.error}',
+                          onRetry: () => setState(() {}),
+                        );
+                      }
+
+                      // Récupérer et filtrer les agents
+                      final agents = snapshot.data ?? [];
+                      final filteredAgents = _filterAgents(agents);
+
+                      // Afficher un message si aucun agent n'est trouvé
+                      if (filteredAgents.isEmpty) {
+                        return const EmptyMessage(
+                          message: 'Aucun agent en réservation trouvé',
+                          icon: Icons.event_busy,
+                        );
+                      }
+
+                      // Afficher la liste des agents
+                      return ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: filteredAgents.length,
+                        itemBuilder: (context, index) {
+                          final agent = filteredAgents[index];
+                          return _buildAgentCard(agent);
+                        },
+                      );
+                    },
+                  )
+                : StreamBuilder<List<AgentModel>>(
+                    stream: databaseService.getAgents(),
+                    builder: (context, snapshot) {
+                      // Afficher un indicateur de chargement
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const LoadingIndicator(
+                          message: 'Chargement des agents...',
+                        );
+                      }
+
+                      // Afficher un message d'erreur
+                      if (snapshot.hasError) {
+                        return ErrorMessage(
+                          message: 'Erreur: ${snapshot.error}',
+                          onRetry: () => setState(() {}),
+                        );
+                      }
+
+                      // Récupérer et filtrer les agents
+                      final agents = snapshot.data ?? [];
+                      final filteredAgents = _filterAgents(agents);
+
+                      // Afficher un message si aucun agent n'est trouvé
+                      if (filteredAgents.isEmpty) {
+                        return const EmptyMessage(
+                          message: 'Aucun agent trouvé',
+                          icon: Icons.person_off,
+                        );
+                      }
+
+                      // Afficher la liste des agents
+                      return ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: filteredAgents.length,
+                        itemBuilder: (context, index) {
+                          final agent = filteredAgents[index];
+                          return _buildAgentCard(agent);
+                        },
+                      );
+                    },
+                  ),
           ),
+
         ],
       ),
       // Bouton flottant pour ajouter un agent
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAgentFormDialog(),
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  // Construire la carte d'un agent
+  Widget _buildAgentCard(AgentModel agent) {
+    return Dismissible(
+      key: Key(agent.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        color: AppTheme.errorColor,
+        child: const Icon(
+          Icons.delete,
+          color: Colors.white,
+        ),
+      ),
+      confirmDismiss: (direction) async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Confirmer la suppression'),
+            content: Text('Êtes-vous sûr de vouloir supprimer l\'agent ${agent.fullName} ?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Annuler'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.errorColor,
+                ),
+                child: const Text('Supprimer'),
+              ),
+            ],
+          ),
+        );
+      },
+      onDismissed: (direction) {
+        _deleteAgent(agent);
+      },
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 16),
+        child: Column(
+          children: [
+            // Carte d'agent
+            AgentCard(
+              agent: agent,
+              onTap: () => _showAgentFormDialog(agent: agent),
+              trailing: IconButton(
+                icon: const Icon(Icons.arrow_forward),
+                onPressed: () => context.go('/agent/${agent.id}'),
+              ),
+            ),
+
+            // Boutons d'action
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Boutons de statut
+                  Row(
+                    children: [
+                      // Bouton de certification
+                      TextButton.icon(
+                        icon: Icon(
+                          Icons.verified,
+                          color: agent.isCertified ? AppTheme.infoColor : Colors.grey,
+                          size: 20,
+                        ),
+                        label: Text(
+                          agent.isCertified ? 'Certifié' : 'Certifier',
+                          style: TextStyle(
+                            color: agent.isCertified ? AppTheme.infoColor : Colors.grey,
+                            fontSize: 12,
+                          ),
+                        ),
+                        onPressed: () => _toggleCertification(agent),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Bouton de disponibilité
+                      TextButton.icon(
+                        icon: Icon(
+                          Icons.event_available,
+                          color: agent.isAvailable ? Colors.green : Colors.red,
+                          size: 20,
+                        ),
+                        label: Text(
+                          agent.isAvailable ? 'Disponible' : 'Indisponible',
+                          style: TextStyle(
+                            color: agent.isAvailable ? Colors.green : Colors.red,
+                            fontSize: 12,
+                          ),
+                        ),
+                        onPressed: () => _toggleAvailability(agent),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      // Bouton de modification
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () => _showAgentFormDialog(agent: agent),
+                        tooltip: AppConstants.editAgent,
+                      ),
+                      // Bouton de suppression
+                      IconButton(
+                        icon: const Icon(
+                          Icons.delete,
+                          color: AppTheme.errorColor,
+                        ),
+                        onPressed: () => _deleteAgent(agent),
+                        tooltip: AppConstants.deleteAgent,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

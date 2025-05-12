@@ -7,6 +7,9 @@ class AppTheme {
   static const Color secondaryColor = Color(0xFF000000); // Noir
   static const Color accentColor = Color(0xFFFFD740); // Jaune accent
   static const Color errorColor = Color(0xFFE53935); // Rouge (conservé pour les erreurs)
+  static const Color successColor = Color(0xFF4CAF50); // Vert (pour les succès)
+  static const Color warningColor = Color(0xFFFF9800); // Orange (pour les avertissements)
+  static const Color infoColor = Color(0xFF2196F3); // Bleu (pour les informations)
 
   // Couleurs neutres
   static const Color darkColor = Color(0xFF000000); // Noir

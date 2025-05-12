@@ -89,23 +89,23 @@ class AgentCard extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: AppTheme.accentColor.withAlpha(25),
+                            color: AppTheme.infoColor.withAlpha(25),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppTheme.accentColor),
+                            border: Border.all(color: AppTheme.infoColor),
                           ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
                                 Icons.verified,
-                                color: AppTheme.accentColor,
+                                color: AppTheme.infoColor,
                                 size: 14,
                               ),
                               SizedBox(width: 4),
                               Text(
                                 'Certifié',
                                 style: TextStyle(
-                                  color: AppTheme.accentColor,
+                                  color: AppTheme.infoColor,
                                   fontWeight: FontWeight.w500,
                                   fontSize: 12,
                                 ),

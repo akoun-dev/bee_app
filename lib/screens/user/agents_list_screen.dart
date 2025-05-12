@@ -1,3 +1,4 @@
+import 'package:bee_app/utils/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -20,8 +21,19 @@ class AgentsListScreen extends StatefulWidget {
 class _AgentsListScreenState extends State<AgentsListScreen> {
   // État
   bool _showOnlyAvailable = true;
+  bool _showOnlyCertified = false;
   String _searchQuery = '';
+  String? _selectedProfession;
   final TextEditingController _searchController = TextEditingController();
+  bool _isSearchingByMatricule = false;
+  bool _isLoading = false;
+  List<String> _availableProfessions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfessions();
+  }
 
   @override
   void dispose() {
@@ -29,17 +41,108 @@ class _AgentsListScreenState extends State<AgentsListScreen> {
     super.dispose();
   }
 
+  // Charger les professions disponibles
+  Future<void> _loadProfessions() async {
+    try {
+      final databaseService = Provider.of<DatabaseService>(context, listen: false);
+      final professions = await databaseService.getAvailableProfessions();
+
+      if (mounted) {
+        setState(() {
+          _availableProfessions = professions;
+        });
+      }
+    } catch (e) {
+      // Ignorer les erreurs
+    }
+  }
+
   // Filtrer les agents
   List<AgentModel> _filterAgents(List<AgentModel> agents) {
+    // Appliquer les filtres de base (certification et profession)
+    List<AgentModel> filteredAgents = agents.where((agent) {
+      // Filtre par certification
+      if (_showOnlyCertified && !agent.isCertified) {
+        return false;
+      }
+
+      // Filtre par profession
+      if (_selectedProfession != null && agent.profession != _selectedProfession) {
+        return false;
+      }
+
+      return true;
+    }).toList();
+
+    // Si pas de recherche, retourner les agents filtrés
     if (_searchQuery.isEmpty) {
-      return agents;
+      return filteredAgents;
     }
 
+    // Si la recherche commence par "MAT:" ou "#", considérer comme une recherche par matricule
+    if (_searchQuery.startsWith("MAT:") || _searchQuery.startsWith("#")) {
+      final matricule = _searchQuery.startsWith("MAT:")
+          ? _searchQuery.substring(4).trim().toLowerCase()
+          : _searchQuery.substring(1).trim().toLowerCase();
+
+      if (matricule.isEmpty) return filteredAgents;
+
+      _isSearchingByMatricule = true;
+      return filteredAgents.where((agent) =>
+        agent.matricule.toLowerCase() == matricule ||
+        agent.matricule.toLowerCase().contains(matricule)
+      ).toList();
+    }
+
+    // Recherche standard
+    _isSearchingByMatricule = false;
     final query = _searchQuery.toLowerCase();
-    return agents.where((agent) {
+    return filteredAgents.where((agent) {
       return agent.fullName.toLowerCase().contains(query) ||
-             agent.profession.toLowerCase().contains(query);
+             agent.profession.toLowerCase().contains(query) ||
+             agent.matricule.toLowerCase().contains(query);
     }).toList();
+  }
+
+  // Rechercher un agent par matricule exact
+  Future<void> _searchAgentByExactMatricule(String matricule) async {
+    if (matricule.isEmpty) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final databaseService = Provider.of<DatabaseService>(context, listen: false);
+      final agent = await databaseService.getAgentByMatricule(matricule);
+
+      if (agent != null && mounted) {
+        // Naviguer directement vers la page de détail de l'agent
+        context.go('/agent/${agent.id}');
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Aucun agent trouvé avec ce matricule exact'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la recherche: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   // Se déconnecter
@@ -72,18 +175,15 @@ class _AgentsListScreenState extends State<AgentsListScreen> {
         title: AppConstants.agentsTitle,
         icon: Icons.security,
         actions: [
-          // Bouton de filtre
+          // Bouton de filtre avancé
           IconButton(
-            icon: Icon(
-              _showOnlyAvailable ? Icons.filter_list : Icons.filter_list_off,
-              color: _showOnlyAvailable ? Theme.of(context).primaryColor : Colors.grey[700],
+            icon: const Icon(
+              Icons.filter_alt,
               size: 22,
             ),
-            tooltip: 'Filtrer les agents disponibles',
+            tooltip: 'Filtres avancés',
             onPressed: () {
-              setState(() {
-                _showOnlyAvailable = !_showOnlyAvailable;
-              });
+              _showFilterDialog();
             },
           ),
           // Menu pour se déconnecter
@@ -108,13 +208,17 @@ class _AgentsListScreenState extends State<AgentsListScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      body: Column(
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(),
+            )
+          : Column(
         children: [
           // En-tête avec barre de recherche et filtre
           Container(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withOpacity(0.05),
+              color: Theme.of(context).primaryColor.withAlpha(13),
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(24),
                 bottomRight: Radius.circular(24),
@@ -124,46 +228,76 @@ class _AgentsListScreenState extends State<AgentsListScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Barre de recherche
-                TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Rechercher un agent par nom ou profession...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() {
-                                _searchQuery = '';
-                              });
-                            },
-                          )
-                        : null,
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Rechercher par nom, profession ou matricule...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (_searchQuery.startsWith("#") || _searchQuery.startsWith("MAT:"))
+                                    IconButton(
+                                      icon: const Icon(Icons.search),
+                                      tooltip: 'Rechercher par matricule exact',
+                                      onPressed: () {
+                                        final matricule = _searchQuery.startsWith("MAT:")
+                                            ? _searchQuery.substring(4).trim()
+                                            : _searchQuery.substring(1).trim();
+                                        _searchAgentByExactMatricule(matricule);
+                                      },
+                                    ),
+                                  IconButton(
+                                    icon: const Icon(Icons.clear),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      setState(() {
+                                        _searchQuery = '';
+                                      });
+                                    },
+                                  ),
+                                ],
+                              )
+                            : null,
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: Theme.of(context).primaryColor,
+                            width: 1,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          _searchQuery = value;
+                        });
+                      },
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: Theme.of(context).primaryColor,
-                        width: 1,
+                    const SizedBox(height: 4),
+                    Text(
+                      'Astuce: Utilisez "#" ou "MAT:" suivi du matricule pour une recherche précise',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                  },
+                  ],
                 ),
 
                 // Filtre pour afficher uniquement les agents disponibles
@@ -194,12 +328,78 @@ class _AgentsListScreenState extends State<AgentsListScreen> {
             ),
           ),
 
+          // Filtres actifs
+          if (_showOnlyCertified || _selectedProfession != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: _buildActiveFilters(),
+                ),
+              ),
+            ),
+
+          // Filtres rapides
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  // Filtre pour les agents disponibles
+                  FilterChip(
+                    label: const Text('Disponibles'),
+                    selected: _showOnlyAvailable,
+                    onSelected: (selected) {
+                      setState(() {
+                        _showOnlyAvailable = selected;
+                      });
+                    },
+                    avatar: Icon(
+                      Icons.event_available,
+                      color: _showOnlyAvailable ? Colors.white : Colors.grey,
+                      size: 18,
+                    ),
+                    backgroundColor: Colors.grey[200],
+                    selectedColor: Colors.green,
+                    checkmarkColor: Colors.white,
+                    labelStyle: TextStyle(
+                      color: _showOnlyAvailable ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Filtre pour les agents certifiés
+                  FilterChip(
+                    label: const Text('Certifiés'),
+                    selected: _showOnlyCertified,
+                    onSelected: (selected) {
+                      setState(() {
+                        _showOnlyCertified = selected;
+                      });
+                    },
+                    avatar: Icon(
+                      Icons.verified,
+                      color: _showOnlyCertified ? Colors.white : Colors.grey,
+                      size: 18,
+                    ),
+                    backgroundColor: Colors.grey[200],
+                    selectedColor: Theme.of(context).primaryColor,
+                    checkmarkColor: Colors.white,
+                    labelStyle: TextStyle(
+                      color: _showOnlyCertified ? Colors.white : Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
           // Liste des agents
           Expanded(
             child: StreamBuilder<List<AgentModel>>(
-              stream: _showOnlyAvailable
-                  ? databaseService.getAvailableAgents()
-                  : databaseService.getAgents(),
+              stream: _getAgentsStream(databaseService),
               builder: (context, snapshot) {
                 // Afficher un indicateur de chargement
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -341,7 +541,7 @@ class _AgentsListScreenState extends State<AgentsListScreen> {
                           Icon(
                             Icons.verified,
                             size: 16,
-                            color: Theme.of(context).primaryColor,
+                            color: AppTheme.infoColor,
                           ),
                       ],
                     ),
@@ -357,6 +557,28 @@ class _AgentsListScreenState extends State<AgentsListScreen> {
                       ),
                     ),
 
+                    const SizedBox(height: 4),
+
+                    // Matricule
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.badge_outlined,
+                          size: 14,
+                          color: Colors.grey[600],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Matricule: ${agent.matricule}',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+
                     const SizedBox(height: 8),
 
                     // Disponibilité
@@ -367,8 +589,8 @@ class _AgentsListScreenState extends State<AgentsListScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: agent.isAvailable
-                            ? Colors.green.withOpacity(0.1)
-                            : Colors.red.withOpacity(0.1),
+                            ? Colors.green.withAlpha(25)
+                            : Colors.red.withAlpha(25),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -509,7 +731,7 @@ class _AgentsListScreenState extends State<AgentsListScreen> {
                       child: Icon(
                         Icons.verified,
                         size: 16,
-                        color: Theme.of(context).primaryColor,
+                        color: AppTheme.infoColor,
                       ),
                     ),
                   ),
@@ -546,6 +768,32 @@ class _AgentsListScreenState extends State<AgentsListScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
 
+                  const SizedBox(height: 4),
+
+                  // Matricule
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.badge_outlined,
+                        size: 12,
+                        color: Colors.grey[600],
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          'Matricule: ${agent.matricule}',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+
                   const SizedBox(height: 8),
 
                   // Évaluation
@@ -571,6 +819,129 @@ class _AgentsListScreenState extends State<AgentsListScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // Obtenir le flux d'agents en fonction des filtres
+  Stream<List<AgentModel>> _getAgentsStream(DatabaseService databaseService) {
+    if (_showOnlyAvailable && _showOnlyCertified) {
+      return databaseService.getAvailableCertifiedAgents();
+    } else if (_showOnlyAvailable) {
+      return databaseService.getAvailableAgents();
+    } else if (_showOnlyCertified) {
+      return databaseService.getCertifiedAgents();
+    } else {
+      return databaseService.getAgents();
+    }
+  }
+
+  // Construire les filtres actifs
+  List<Widget> _buildActiveFilters() {
+    final List<Widget> filters = [];
+
+    // Filtre de profession
+    if (_selectedProfession != null) {
+      filters.add(
+        Chip(
+          label: Text(_selectedProfession!),
+          deleteIcon: const Icon(Icons.close, size: 16),
+          onDeleted: () => setState(() => _selectedProfession = null),
+          backgroundColor: Colors.blue.withAlpha(50),
+        ),
+      );
+    }
+
+    return filters;
+  }
+
+  // Afficher le dialogue de filtres
+  void _showFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Filtres avancés'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Filtre par disponibilité
+                  SwitchListTile(
+                    title: const Text('Agents disponibles'),
+                    value: _showOnlyAvailable,
+                    onChanged: (value) {
+                      setState(() => _showOnlyAvailable = value);
+                    },
+                  ),
+
+                  // Filtre par certification
+                  SwitchListTile(
+                    title: const Text('Agents certifiés'),
+                    value: _showOnlyCertified,
+                    onChanged: (value) {
+                      setState(() => _showOnlyCertified = value);
+                    },
+                  ),
+
+                  const Divider(),
+
+                  // Filtre par profession
+                  const Text(
+                    'Profession:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+
+                  if (_availableProfessions.isEmpty)
+                    const Text('Chargement des professions...', style: TextStyle(fontStyle: FontStyle.italic))
+                  else
+                    DropdownButton<String?>(
+                      value: _selectedProfession,
+                      isExpanded: true,
+                      hint: const Text('Toutes les professions'),
+                      items: [
+                        const DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('Toutes les professions'),
+                        ),
+                        ..._availableProfessions.map((profession) => DropdownMenuItem<String?>(
+                          value: profession,
+                          child: Text(profession),
+                        )),
+                      ],
+                      onChanged: (value) {
+                        setState(() => _selectedProfession = value);
+                      },
+                    ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  // Réinitialiser les filtres
+                  setState(() {
+                    _showOnlyAvailable = true;
+                    _showOnlyCertified = false;
+                    _selectedProfession = null;
+                  });
+                },
+                child: const Text('Réinitialiser'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  // Appliquer les filtres et fermer le dialogue
+                  Navigator.pop(context);
+                  this.setState(() {});
+                },
+                child: const Text('Appliquer'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

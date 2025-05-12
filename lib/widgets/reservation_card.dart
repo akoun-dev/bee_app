@@ -12,6 +12,7 @@ class ReservationCard extends StatelessWidget {
   final AgentModel? agent;
   final VoidCallback? onRatePressed;
   final VoidCallback? onCancelPressed;
+  final VoidCallback? onCompletePressed;
 
   const ReservationCard({
     super.key,
@@ -19,6 +20,7 @@ class ReservationCard extends StatelessWidget {
     this.agent,
     this.onRatePressed,
     this.onCancelPressed,
+    this.onCompletePressed,
   });
 
   @override
@@ -28,6 +30,8 @@ class ReservationCard extends StatelessWidget {
                          reservation.rating == null;
     final bool canCancel = reservation.status == ReservationModel.statusPending ||
                            reservation.status == ReservationModel.statusApproved;
+    final bool canComplete = reservation.status == ReservationModel.statusApproved &&
+                             reservation.endDate.isBefore(DateTime.now());
 
     // Déterminer la couleur en fonction du statut
     Color statusColor;
@@ -65,7 +69,7 @@ class ReservationCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
+              color: statusColor.withAlpha(25),
               border: Border(
                 left: BorderSide(
                   color: statusColor,
@@ -210,10 +214,10 @@ class ReservationCard extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.amber.withOpacity(0.1),
+                      color: Colors.amber.withAlpha(25),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: Colors.amber.withOpacity(0.3),
+                        color: Colors.amber.withAlpha(75),
                       ),
                     ),
                     child: Column(
@@ -257,7 +261,7 @@ class ReservationCard extends StatelessWidget {
                 ],
 
                 // Actions
-                if (canRate || canCancel) ...[
+                if (canRate || canCancel || canComplete) ...[
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
@@ -273,7 +277,20 @@ class ReservationCard extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           ),
                         ),
-                      if (canCancel && canRate)
+                      if ((canCancel && canRate) || (canCancel && canComplete) || (canRate && canComplete))
+                        const SizedBox(width: 12),
+                      if (canComplete)
+                        OutlinedButton.icon(
+                          onPressed: onCompletePressed,
+                          icon: const Icon(Icons.check_circle_outline, size: 18),
+                          label: const Text('Terminer'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.green,
+                            side: const BorderSide(color: Colors.green),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                        ),
+                      if (canRate && canComplete)
                         const SizedBox(width: 12),
                       if (canRate)
                         ElevatedButton.icon(
@@ -339,35 +356,5 @@ class ReservationCard extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, IconData icon) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(
-          icon,
-          size: 18,
-          color: AppTheme.mediumColor,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  color: AppTheme.mediumColor,
-                  fontSize: 12,
-                ),
-              ),
-              Text(
-                value,
-                style: const TextStyle(fontSize: 14),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+
 }

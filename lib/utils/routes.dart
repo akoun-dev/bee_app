@@ -18,6 +18,7 @@ import '../screens/user/recommendations_screen.dart';
 import '../screens/user/user_settings_screen.dart';
 import '../screens/user/password_reset_screen.dart';
 import '../screens/user/email_verification_screen.dart';
+import '../screens/user/review_submission_screen.dart';
 
 // Écrans administrateur
 import '../screens/admin/agents_management_screen.dart';
@@ -125,6 +126,17 @@ class AppRouter {
           showBackButton: false, // Pas besoin de bouton retour pour un onglet principal
           // Ne pas définir de titre ici car l'écran a déjà un AppBar avec un titre
         ),
+      ),
+      GoRoute(
+        path: '/review/:reservationId',
+        builder: (context, state) {
+          final reservationId = state.pathParameters['reservationId']!;
+          return ReviewSubmissionScreen(reservationId: reservationId).withUserNavigation(
+            currentIndex: 2, // Correspond à l'onglet Historique
+            showBackButton: true,
+            title: 'Évaluer votre expérience',
+          );
+        },
       ),
 
       // Routes administrateur

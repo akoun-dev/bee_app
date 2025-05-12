@@ -273,7 +273,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.darkColor,
+                color: Colors.black87,
               ),
             ),
           ],
