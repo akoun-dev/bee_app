@@ -1,8 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:logger/logger.dart';
 import '../models/user_model.dart';
 import '../utils/constants.dart';
+
+final logger = Logger();
 
 // Service pour gérer l'authentification des utilisateurs
 class AuthService {
@@ -21,10 +24,10 @@ class AuthService {
       // setPersistence uniquement sur le web
       if (kIsWeb) {
         await _auth.setPersistence(Persistence.LOCAL);
-        print('Persistance d\'authentification configurée avec succès');
+        logger.i('Persistance d\'authentification configurée avec succès');
       }
     } catch (e) {
-      print(
+      logger.e(
         'Erreur lors de la configuration de la persistance: \\${e.toString()}',
       );
       // En cas d'erreur, on continue quand même car la persistance par défaut est généralement LOCAL

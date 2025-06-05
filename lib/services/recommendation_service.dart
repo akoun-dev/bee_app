@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:logger/logger.dart';
 
 import '../models/agent_model.dart';
 import '../models/reservation_model.dart';
@@ -8,6 +9,8 @@ import '../models/user_preferences_model.dart';
 // Service pour les recommandations personnalisées
 class RecommendationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  final Logger logger = Logger();
   
   // Collections
   final CollectionReference _usersCollection = FirebaseFirestore.instance.collection('users');
@@ -53,7 +56,7 @@ class RecommendationService {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de la récupération des préférences: ${e.toString()}');
+        logger.e('Erreur lors de la récupération des préférences: ${e.toString()}');
       }
       
       // Retourner des préférences par défaut en cas d'erreur
@@ -71,7 +74,7 @@ class RecommendationService {
       _preferencesCache[preferences.userId] = preferences;
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de la mise à jour des préférences: ${e.toString()}');
+        logger.e('Erreur lors de la mise à jour des préférences: ${e.toString()}');
       }
       throw Exception('Erreur lors de la mise à jour des préférences: ${e.toString()}');
     }
@@ -93,7 +96,7 @@ class RecommendationService {
       await updateUserPreferences(updatedPreferences);
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de la modification des favoris: ${e.toString()}');
+        logger.e('Erreur lors de la modification des favoris: ${e.toString()}');
       }
       throw Exception('Erreur lors de la modification des favoris: ${e.toString()}');
     }
@@ -125,7 +128,7 @@ class RecommendationService {
       return favoriteAgents;
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de la récupération des agents favoris: ${e.toString()}');
+        logger.e('Erreur lors de la récupération des agents favoris: ${e.toString()}');
       }
       return [];
     }
@@ -201,7 +204,7 @@ class RecommendationService {
       return recommendedAgents;
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de la récupération des recommandations: ${e.toString()}');
+        logger.e('Erreur lors de la récupération des recommandations: ${e.toString()}');
       }
       return [];
     }
@@ -275,7 +278,7 @@ class RecommendationService {
       return otherAgents.take(limit).toList();
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de la récupération des agents similaires: ${e.toString()}');
+        logger.e('Erreur lors de la récupération des agents similaires: ${e.toString()}');
       }
       return [];
     }
@@ -352,7 +355,7 @@ class RecommendationService {
       await updateUserPreferences(updatedPreferences);
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de la mise à jour des préférences de catégorie: ${e.toString()}');
+        logger.e('Erreur lors de la mise à jour des préférences de catégorie: ${e.toString()}');
       }
     }
   }

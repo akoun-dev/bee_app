@@ -1,10 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:logger/logger.dart';
 
 // Service pour la génération de rapports
 class ReportService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  final Logger logger = Logger();
   
   // Générer un rapport
   Future<String> generateReport({
@@ -15,7 +18,7 @@ class ReportService {
   }) async {
     try {
       if (kDebugMode) {
-        print('Génération de rapport: $type, du ${DateFormat('dd/MM/yyyy').format(startDate)} au ${DateFormat('dd/MM/yyyy').format(endDate)}, format: $format');
+        logger.i('Génération de rapport: $type, du ${DateFormat('dd/MM/yyyy').format(startDate)} au ${DateFormat('dd/MM/yyyy').format(endDate)}, format: $format');
       }
       
       // Simuler la génération d'un rapport
@@ -35,7 +38,7 @@ class ReportService {
       return 'https://example.com/reports/report_${DateTime.now().millisecondsSinceEpoch}.$format';
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de la génération du rapport: ${e.toString()}');
+        logger.e('Erreur lors de la génération du rapport: ${e.toString()}');
       }
       throw Exception('Erreur lors de la génération du rapport: ${e.toString()}');
     }
@@ -59,7 +62,7 @@ class ReportService {
       });
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de l\'enregistrement de l\'historique: ${e.toString()}');
+        logger.e('Erreur lors de l\'enregistrement de l\'historique: ${e.toString()}');
       }
     }
   }
@@ -88,7 +91,7 @@ class ReportService {
       }).toList();
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de la récupération de l\'historique: ${e.toString()}');
+        logger.e('Erreur lors de la récupération de l\'historique: ${e.toString()}');
       }
       return [];
     }
@@ -116,7 +119,7 @@ class ReportService {
       return reportData;
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de la récupération des données: ${e.toString()}');
+        logger.e('Erreur lors de la récupération des données: ${e.toString()}');
       }
       throw Exception('Erreur lors de la récupération des données: ${e.toString()}');
     }
