@@ -1,0 +1,26 @@
+Points à améliorer / Vigilances
+1. Sécurité & Permissions
+Vérification des rôles : bien présente côté Flutter, mais il faut aussi sécuriser côté Firestore (rules).
+Validation des entrées : attention à bien valider/saniter tous les champs côté client ET serveur (ex : commentaires, uploads).
+
+
+2. Performance
+Chargement des images : penser à utiliser le cache réseau pour les images d’agents.
+Optimisation des requêtes Firestore : pagination, indexation, limitation des snapshots temps réel si non nécessaires.
+Gestion mémoire : bien disposer les contrôleurs et listeners (ce qui est déjà fait dans la plupart des écrans).
+
+
+3. Expérience utilisateur
+Feedbacks : continuer à afficher des loaders et messages d’erreur explicites partout.
+Accessibilité : vérifier la taille minimale des boutons, le contraste, et la navigation clavier/lecteur d’écran.
+Internationalisation : prévoir la traduction si besoin (actuellement tout est en français).
+
+
+4. Tests & Robustesse
+Tests unitaires et d’intégration : peu visibles dans la structure, à renforcer pour les services critiques (auth, réservation, paiement si ajouté).
+Gestion des cas limites : que se passe-t-il si un agent est supprimé alors qu’il a des réservations ? Si une image ne charge jamais ?
+
+
+5. Backend & Scalabilité
+Règles Firestore : à auditer pour éviter toute fuite de données ou modification non autorisée.
+Gestion des quotas Firebase : surveiller l’usage (stockage, notifications, Firestore reads/writes).

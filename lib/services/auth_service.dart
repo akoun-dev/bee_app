@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import '../utils/constants.dart';
 
@@ -17,11 +18,15 @@ class AuthService {
   // Configurer la persistance de l'authentification
   Future<void> _configurePersistence() async {
     try {
-      // Définir la persistance sur LOCAL (persistant même après redémarrage de l'application)
-      await _auth.setPersistence(Persistence.LOCAL);
-      print('Persistance d\'authentification configurée avec succès');
+      // setPersistence uniquement sur le web
+      if (kIsWeb) {
+        await _auth.setPersistence(Persistence.LOCAL);
+        print('Persistance d\'authentification configurée avec succès');
+      }
     } catch (e) {
-      print('Erreur lors de la configuration de la persistance: ${e.toString()}');
+      print(
+        'Erreur lors de la configuration de la persistance: \\${e.toString()}',
+      );
       // En cas d'erreur, on continue quand même car la persistance par défaut est généralement LOCAL
     }
   }
@@ -134,10 +139,11 @@ class AuthService {
       // Vérifier si l'email est vérifié (sauf pour les administrateurs)
       if (requireEmailVerification && !userCredential.user!.emailVerified) {
         // Vérifier si l'utilisateur est un administrateur
-        final docSnapshot = await _firestore
-            .collection('users')
-            .doc(userCredential.user!.uid)
-            .get();
+        final docSnapshot =
+            await _firestore
+                .collection('users')
+                .doc(userCredential.user!.uid)
+                .get();
 
         if (docSnapshot.exists) {
           final userData = docSnapshot.data() as Map<String, dynamic>;
@@ -157,10 +163,11 @@ class AuthService {
       }
 
       // Récupérer les données utilisateur depuis Firestore
-      final docSnapshot = await _firestore
-          .collection('users')
-          .doc(userCredential.user!.uid)
-          .get();
+      final docSnapshot =
+          await _firestore
+              .collection('users')
+              .doc(userCredential.user!.uid)
+              .get();
 
       if (!docSnapshot.exists) {
         throw Exception('Profil utilisateur introuvable');
@@ -264,10 +271,8 @@ class AuthService {
       final user = _auth.currentUser;
       if (user == null) return null;
 
-      final docSnapshot = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .get();
+      final docSnapshot =
+          await _firestore.collection('users').doc(user.uid).get();
 
       if (!docSnapshot.exists) return null;
 
@@ -298,7 +303,9 @@ class AuthService {
         if (profileImageUrl != null) 'profileImageUrl': profileImageUrl,
       });
     } catch (e) {
-      throw Exception('Erreur lors de la mise à jour du profil: ${e.toString()}');
+      throw Exception(
+        'Erreur lors de la mise à jour du profil: ${e.toString()}',
+      );
     }
   }
 
@@ -323,6 +330,47 @@ class AuthService {
 
       // Pour les autres erreurs, afficher un message générique
       throw Exception(AppConstants.errorGeneric);
+    }
+  }
+
+  // Modifier le mot de passe
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) throw Exception('Utilisateur non connecté');
+
+      // Recréer les credentials pour vérifier le mot de passe actuel
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: currentPassword,
+      );
+
+      // Vérifier le mot de passe actuel
+      await user.reauthenticateWithCredential(credential);
+
+      // Changer le mot de passe
+      await user.updatePassword(newPassword);
+    } catch (e) {
+      if (e is FirebaseAuthException) {
+        switch (e.code) {
+          case 'wrong-password':
+            throw Exception('Mot de passe actuel incorrect');
+          case 'weak-password':
+            throw Exception('Le nouveau mot de passe est trop faible');
+          case 'requires-recent-login':
+            throw Exception(
+              'Veuillez vous reconnecter pour modifier votre mot de passe',
+            );
+          default:
+            throw Exception(
+              'Erreur lors du changement de mot de passe: ${e.message}',
+            );
+        }
+      }
+      throw Exception('Erreur lors du changement de mot de passe');
     }
   }
 }

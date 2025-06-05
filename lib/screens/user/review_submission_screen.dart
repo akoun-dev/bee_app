@@ -16,10 +16,7 @@ import '../../widgets/common_widgets.dart';
 class ReviewSubmissionScreen extends StatefulWidget {
   final String reservationId;
 
-  const ReviewSubmissionScreen({
-    super.key,
-    required this.reservationId,
-  });
+  const ReviewSubmissionScreen({super.key, required this.reservationId});
 
   @override
   State<ReviewSubmissionScreen> createState() => _ReviewSubmissionScreenState();
@@ -27,7 +24,7 @@ class ReviewSubmissionScreen extends StatefulWidget {
 
 class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _commentController = TextEditingController();
+  TextEditingController _commentController = TextEditingController();
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -56,10 +53,15 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
     });
 
     try {
-      final databaseService = Provider.of<DatabaseService>(context, listen: false);
+      final databaseService = Provider.of<DatabaseService>(
+        context,
+        listen: false,
+      );
 
       // Récupérer la réservation
-      final reservation = await databaseService.getReservation(widget.reservationId);
+      final reservation = await databaseService.getReservation(
+        widget.reservationId,
+      );
       if (reservation == null) {
         throw Exception('Réservation introuvable');
       }
@@ -108,7 +110,10 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
 
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
-      final databaseService = Provider.of<DatabaseService>(context, listen: false);
+      final databaseService = Provider.of<DatabaseService>(
+        context,
+        listen: false,
+      );
 
       final currentUser = authService.currentUser;
       if (currentUser == null) {
@@ -125,9 +130,10 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
         agentId: _reservation!.agentId,
         reservationId: _reservation!.id,
         rating: _rating,
-        comment: _commentController.text.trim().isEmpty
-            ? 'Aucun commentaire'
-            : _commentController.text.trim(),
+        comment:
+            _commentController.text.trim().isEmpty
+                ? 'Aucun commentaire'
+                : _commentController.text.trim(),
         createdAt: DateTime.now(),
         userFullName: userData?.fullName,
         userProfileImageUrl: userData?.profileImageUrl,
@@ -173,13 +179,16 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
       ),
-      body: _isLoading
-          ? const LoadingIndicator(message: 'Chargement des informations...')
-          : _errorMessage != null
+      body:
+          _isLoading
+              ? const LoadingIndicator(
+                message: 'Chargement des informations...',
+              )
+              : _errorMessage != null
               ? ErrorMessage(
-                  message: _errorMessage!,
-                  onRetry: _loadReservationDetails,
-                )
+                message: _errorMessage!,
+                onRetry: _loadReservationDetails,
+              )
               : _buildReviewForm(),
     );
   }
@@ -200,10 +209,7 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
             // Section d'évaluation
             const Text(
               'Votre évaluation',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
 
@@ -218,10 +224,9 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                     allowHalfRating: true,
                     itemCount: 5,
                     itemPadding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    itemBuilder: (context, _) => const Icon(
-                      Icons.star,
-                      color: Colors.amber,
-                    ),
+                    itemBuilder:
+                        (context, _) =>
+                            const Icon(Icons.star, color: Colors.amber),
                     onRatingUpdate: (rating) {
                       setState(() {
                         _rating = rating;
@@ -246,15 +251,17 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
             // Champ de commentaire
             TextFormField(
               controller: _commentController,
+              maxLength: 300,
               decoration: const InputDecoration(
-                labelText: 'Commentaire',
-                hintText: 'Partagez votre expérience avec cet agent...',
+                labelText: 'Votre commentaire',
                 border: OutlineInputBorder(),
               ),
-              maxLines: 5,
               validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Veuillez entrer un commentaire';
+                if (value == null || sanitizeComment(value).isEmpty) {
+                  return 'Le commentaire ne peut pas être vide.';
+                }
+                if (sanitizeComment(value).length > 300) {
+                  return 'Le commentaire ne doit pas dépasser 300 caractères.';
                 }
                 return null;
               },
@@ -276,10 +283,7 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                 ),
                 child: const Text(
                   'Soumettre mon évaluation',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -322,10 +326,7 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                 const SizedBox(height: 4),
                 Text(
                   _agent!.profession,
-                  style: TextStyle(
-                    color: Colors.grey[700],
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.grey[700], fontSize: 14),
                 ),
                 if (_agent!.averageRating > 0) ...[
                   const SizedBox(height: 4),
@@ -349,5 +350,10 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
     if (_rating >= 3) return 'Bien';
     if (_rating >= 2) return 'Moyen';
     return 'À améliorer';
+  }
+
+  // Nettoyer le commentaire (supprimer les espaces inutiles)
+  String sanitizeComment(String value) {
+    return value.trim();
   }
 }

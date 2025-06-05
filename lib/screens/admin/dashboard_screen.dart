@@ -395,7 +395,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Revenus par mois (€)',
+              'Revenus par mois (Fcfa)',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -513,7 +513,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       style: const TextStyle(fontSize: 12),
                     ),
                     Text(
-                      '${NumberFormat('#,###').format(item['revenue'])} €',
+                      '${NumberFormat('#,###').format(item['revenue'])} Fcfa',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: AppTheme.accentColor,

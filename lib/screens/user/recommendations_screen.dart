@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/agent_model.dart';
 import '../../services/recommendation_service.dart';
 import '../../utils/theme.dart';
+import '../../utils/routes.dart';
 import '../../widgets/agent_card.dart';
 import '../../widgets/common_widgets.dart';
 
@@ -22,40 +23,46 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
   List<AgentModel> _favoriteAgents = [];
   List<AgentModel> _recommendedAgents = [];
   String? _currentUserId;
-  
+
   @override
   void initState() {
     super.initState();
     _loadRecommendations();
   }
-  
+
   // Charger les recommandations
   Future<void> _loadRecommendations() async {
     setState(() => _isLoading = true);
-    
+
     try {
       // Récupérer l'ID de l'utilisateur actuel
       final user = Provider.of<User?>(context, listen: false);
-      
+
       if (user == null) {
         setState(() => _isLoading = false);
         return;
       }
-      
+
       _currentUserId = user.uid;
-      
+
       // Récupérer les services
-      final recommendationService = Provider.of<RecommendationService>(context, listen: false);
-      
+      final recommendationService = Provider.of<RecommendationService>(
+        context,
+        listen: false,
+      );
+
       // Mettre à jour les préférences de catégorie basées sur l'historique
       await recommendationService.updateCategoryPreferences(_currentUserId!);
-      
+
       // Récupérer les agents favoris
-      final favoriteAgents = await recommendationService.getFavoriteAgents(_currentUserId!);
-      
+      final favoriteAgents = await recommendationService.getFavoriteAgents(
+        _currentUserId!,
+      );
+
       // Récupérer les agents recommandés
-      final recommendedAgents = await recommendationService.getRecommendedAgents(_currentUserId!);
-      
+      final recommendedAgents = await recommendationService
+          .getRecommendedAgents(_currentUserId!);
+
       if (mounted) {
         setState(() {
           _favoriteAgents = favoriteAgents;
@@ -65,71 +72,91 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erreur: ${e.toString()}')));
         setState(() => _isLoading = false);
       }
     }
   }
-  
+
   // Gérer l'ajout/suppression des favoris
   Future<void> _toggleFavorite(String agentId) async {
     if (_currentUserId == null) return;
-    
+
     try {
-      final recommendationService = Provider.of<RecommendationService>(context, listen: false);
-      
+      final recommendationService = Provider.of<RecommendationService>(
+        context,
+        listen: false,
+      );
+
       await recommendationService.toggleFavoriteAgent(_currentUserId!, agentId);
-      
+
       // Recharger les données
       await _loadRecommendations();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erreur: ${e.toString()}')));
       }
     }
   }
-  
+
+  // Fonction utilitaire pour la navigation sécurisée
+  void popOrGoDashboard(BuildContext context) {
+    final router = GoRouter.of(context);
+    if (router.canPop()) {
+      router.pop();
+    } else {
+      router.go('/dashboard');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Recommandations'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadRecommendations,
-            tooltip: 'Actualiser',
-          ),
-        ],
+        elevation: 0,
+        leading:
+            Navigator.of(context).canPop() || GoRouter.of(context).canPop()
+                ? IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () {
+                    // Remplace le pop direct par le helper sécurisé
+                    popOrGoDashboard(context);
+                  },
+                )
+                : null,
       ),
-      body: _isLoading
-        ? const LoadingIndicator(message: 'Chargement des recommandations...')
-        : RefreshIndicator(
-            onRefresh: _loadRecommendations,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Section des favoris
-                  _buildFavoritesSection(),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Section des recommandations
-                  _buildRecommendationsSection(),
-                ],
+      body:
+          _isLoading
+              ? const LoadingIndicator(
+                message: 'Chargement des recommandations...',
+              )
+              : RefreshIndicator(
+                onRefresh: _loadRecommendations,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Section des favoris
+                      _buildFavoritesSection(),
+
+                      const SizedBox(height: 24),
+
+                      // Section des recommandations
+                      _buildRecommendationsSection(),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
     );
   }
-  
+
   // Construire la section des favoris
   Widget _buildFavoritesSection() {
     return Column(
@@ -140,10 +167,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
           children: [
             const Text(
               'Vos favoris',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             if (_favoriteAgents.isNotEmpty)
               TextButton(
@@ -155,7 +179,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
           ],
         ),
         const SizedBox(height: 8),
-        
+
         if (_favoriteAgents.isEmpty)
           const EmptyMessage(
             message: 'Vous n\'avez pas encore d\'agents favoris',
@@ -195,7 +219,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 12),
-                                
+
                                 // Nom
                                 Text(
                                   agent.fullName,
@@ -206,7 +230,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                
+
                                 // Profession
                                 Text(
                                   agent.profession,
@@ -217,9 +241,9 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                
+
                                 const SizedBox(height: 8),
-                                
+
                                 // Note
                                 RatingDisplay(
                                   rating: agent.averageRating,
@@ -229,7 +253,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                               ],
                             ),
                           ),
-                          
+
                           // Bouton favori
                           Positioned(
                             top: 8,
@@ -254,7 +278,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
       ],
     );
   }
-  
+
   // Construire la section des recommandations
   Widget _buildRecommendationsSection() {
     return Column(
@@ -262,13 +286,10 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
       children: [
         const Text(
           'Recommandés pour vous',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
-        
+
         if (_recommendedAgents.isEmpty)
           const EmptyMessage(
             message: 'Aucune recommandation disponible pour le moment',
@@ -289,14 +310,16 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                     _favoriteAgents.any((a) => a.id == agent.id)
                         ? Icons.favorite
                         : Icons.favorite_border,
-                    color: _favoriteAgents.any((a) => a.id == agent.id)
-                        ? AppTheme.accentColor
-                        : AppTheme.mediumColor,
+                    color:
+                        _favoriteAgents.any((a) => a.id == agent.id)
+                            ? AppTheme.accentColor
+                            : AppTheme.mediumColor,
                   ),
                   onPressed: () => _toggleFavorite(agent.id),
-                  tooltip: _favoriteAgents.any((a) => a.id == agent.id)
-                      ? 'Retirer des favoris'
-                      : 'Ajouter aux favoris',
+                  tooltip:
+                      _favoriteAgents.any((a) => a.id == agent.id)
+                          ? 'Retirer des favoris'
+                          : 'Ajouter aux favoris',
                 ),
               );
             },

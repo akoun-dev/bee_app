@@ -17,6 +17,7 @@ import '../screens/user/user_profile_screen.dart';
 import '../screens/user/recommendations_screen.dart';
 import '../screens/user/user_settings_screen.dart';
 import '../screens/user/password_reset_screen.dart';
+import '../screens/user/password_change_screen.dart';
 import '../screens/user/email_verification_screen.dart';
 import '../screens/user/review_submission_screen.dart';
 
@@ -53,6 +54,14 @@ class AppRouter {
       GoRoute(
         path: '/reset-password',
         builder: (context, state) => const PasswordResetScreen(),
+      ),
+      GoRoute(
+        path: '/change-password',
+        builder: (context, state) => const PasswordChangeScreen().withUserNavigation(
+          currentIndex: 3, // Index du profil
+          showBackButton: true,
+          title: 'Modifier le mot de passe',
+        ),
       ),
       GoRoute(
         path: '/verify-email',

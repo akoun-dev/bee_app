@@ -30,35 +30,23 @@ service cloud.firestore {
       }
     }
 
-    // Règles pour la collection agents
+    // Agents (lecture publique, écriture réservée aux admins)
     match /agents/{agentId} {
-      // Tout le monde peut lire les profils des agents
-      allow read: if isAuthenticated();
-      // Seul l'admin peut créer/modifier/supprimer des agents
-      allow write: if isAdmin();
+      allow read: if true;
+      allow create, update, delete: if request.auth.token.admin == true;
     }
 
-    // Règles pour la collection reservations
+    // Réservations (lecture/écriture par le créateur ou admin)
     match /reservations/{reservationId} {
-      // Un utilisateur peut lire ses propres réservations
-      // Un agent peut lire les réservations qui le concernent
-      // Un admin peut lire toutes les réservations
-      allow read: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid ||
-        resource.data.agentId == request.auth.uid ||
-        isAdmin()
-      );
+      allow read, write: if request.auth != null
+        && (request.auth.uid == resource.data.userId || request.auth.token.admin == true);
+    }
 
-      // Un utilisateur peut créer une réservation pour lui-même
-      allow create: if isAuthenticated() &&
-        request.resource.data.userId == request.auth.uid;
-
-      // Un utilisateur peut modifier/supprimer ses propres réservations
-      // Un admin peut modifier/supprimer toutes les réservations
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid ||
-        isAdmin()
-      );
+    // Avis (lecture publique, écriture par utilisateur connecté)
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
 
     // Règles pour la collection settings
@@ -88,23 +76,6 @@ service cloud.firestore {
       // Un utilisateur peut lire/écrire ses propres préférences
       // Un admin peut lire/écrire toutes les préférences
       allow read, write: if isOwner(userId) || isAdmin();
-    }
-
-    // Règles pour la collection reviews
-    match /reviews/{reviewId} {
-      // Tout utilisateur authentifié peut lire les avis
-      allow read: if isAuthenticated();
-
-      // Un utilisateur peut créer un avis s'il est l'auteur
-      allow create: if isAuthenticated() &&
-        request.resource.data.userId == request.auth.uid;
-
-      // Un utilisateur peut modifier/supprimer ses propres avis
-      // Un admin peut modifier/supprimer tous les avis
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid ||
-        isAdmin()
-      );
     }
 
     // Règles par défaut - refuser tout accès non spécifié

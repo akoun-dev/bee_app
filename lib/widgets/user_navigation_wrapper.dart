@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'user_bottom_navigation.dart';
 
 // Wrapper pour ajouter la navigation utilisateur à toutes les pages
@@ -53,7 +54,15 @@ class UserNavigationWrapper extends StatelessWidget {
                 leading: showBackButton
                     ? IconButton(
                         icon: const Icon(Icons.arrow_back),
-                        onPressed: () => Navigator.of(context).pop(),
+                        onPressed: () {
+                          final router = GoRouter.of(context);
+                          if (router.canPop()) {
+                            router.pop();
+                          } else {
+                            // Rediriger vers l'écran d'accueil si on ne peut pas pop
+                            router.go('/');
+                          }
+                        },
                       )
                     : null,
                 actions: actions,

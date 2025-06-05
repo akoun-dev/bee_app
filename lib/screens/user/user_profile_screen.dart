@@ -495,7 +495,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             leading: const Icon(Icons.password),
             title: const Text('Changer le mot de passe'),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () => context.go('/settings'),
+            onTap: () => context.go('/'),
           ),
           const Divider(height: 1),
         ],

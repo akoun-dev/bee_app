@@ -25,7 +25,7 @@ class UserBottomNavigation extends StatelessWidget {
         ],
       ),
       child: BottomNavigationBar(
-        currentIndex: currentIndex,
+        currentIndex: currentIndex.clamp(0, 3),
         type: BottomNavigationBarType.fixed,
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         selectedItemColor: AppTheme.primaryColor,
@@ -84,9 +84,6 @@ class UserBottomNavigation extends StatelessWidget {
         break;
       case 3:
         route = '/profile';
-        break;
-      case 4:
-        route = '/settings';
         break;
       default:
         return;
