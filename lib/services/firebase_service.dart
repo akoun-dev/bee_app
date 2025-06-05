@@ -1,6 +1,9 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
+import 'package:logger/logger.dart';
 import '../firebase_options.dart';
+
+final logger = Logger();
 
 // Service pour initialiser Firebase
 class FirebaseService {
@@ -12,11 +15,11 @@ class FirebaseService {
       );
 
       if (kDebugMode) {
-        print('Firebase initialisé avec succès');
+        logger.i('Firebase initialisé avec succès');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de l\'initialisation de Firebase: $e');
+        logger.e('Erreur lors de l\'initialisation de Firebase: $e');
       }
       rethrow;
     }

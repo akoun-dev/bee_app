@@ -1,11 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:logger/logger.dart';
 
 // Service pour gérer les paramètres de l'application
 class SettingsService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _settingsDocId = 'app_settings';
+
+  final Logger logger = Logger();
   
   // Paramètres par défaut
   final Map<String, dynamic> _defaultSettings = {
@@ -64,7 +67,7 @@ class SettingsService {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de la récupération des paramètres: ${e.toString()}');
+        logger.e('Erreur lors de la récupération des paramètres: ${e.toString()}');
       }
       
       // En cas d'erreur, essayer de récupérer les paramètres locaux
@@ -96,7 +99,7 @@ class SettingsService {
       await _saveSettingsLocally(updatedSettings);
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de la mise à jour des paramètres: ${e.toString()}');
+        logger.e('Erreur lors de la mise à jour des paramètres: ${e.toString()}');
       }
       throw Exception('Erreur lors de la mise à jour des paramètres: ${e.toString()}');
     }
@@ -124,7 +127,7 @@ class SettingsService {
       await prefs.setString('settings_lastSaved', DateTime.now().toIso8601String());
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de la sauvegarde locale des paramètres: ${e.toString()}');
+        logger.e('Erreur lors de la sauvegarde locale des paramètres: ${e.toString()}');
       }
     }
   }
@@ -163,7 +166,7 @@ class SettingsService {
       return settings;
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de la récupération locale des paramètres: ${e.toString()}');
+        logger.e('Erreur lors de la récupération locale des paramètres: ${e.toString()}');
       }
       return null;
     }

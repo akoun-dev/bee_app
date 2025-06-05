@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:logger/logger.dart';
 
 // Service pour gérer les notifications push
 class NotificationService {
@@ -11,6 +12,8 @@ class NotificationService {
   final CollectionReference _notificationsCollection = FirebaseFirestore.instance.collection('notifications');
   final CollectionReference _usersCollection = FirebaseFirestore.instance.collection('users');
   final CollectionReference _agentsCollection = FirebaseFirestore.instance.collection('agents');
+
+  final Logger logger = Logger();
 
   // Initialiser les notifications
   Future<void> initialize() async {
@@ -23,7 +26,7 @@ class NotificationService {
       );
 
       if (kDebugMode) {
-        print('Statut des autorisations de notification: ${settings.authorizationStatus}');
+        logger.i('Statut des autorisations de notification: ${settings.authorizationStatus}');
       }
 
       // Configurer les notifications locales
@@ -50,11 +53,11 @@ class NotificationService {
       // Obtenir le token FCM
       final token = await _messaging.getToken();
       if (kDebugMode) {
-        print('Token FCM: $token');
+        logger.d('Token FCM: $token');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de l\'initialisation des notifications: $e');
+        logger.e('Erreur lors de l\'initialisation des notifications: $e');
       }
     }
   }
@@ -62,7 +65,7 @@ class NotificationService {
   // Gérer les messages reçus en premier plan
   void _handleForegroundMessage(RemoteMessage message) async {
     if (kDebugMode) {
-      print('Message reçu en premier plan: ${message.notification?.title}');
+      logger.d('Message reçu en premier plan: ${message.notification?.title}');
     }
 
     // Afficher une notification locale
@@ -96,7 +99,7 @@ class NotificationService {
   // Gérer les messages ouverts depuis la notification
   void _handleMessageOpenedApp(RemoteMessage message) {
     if (kDebugMode) {
-      print('Message ouvert depuis la notification: ${message.notification?.title}');
+      logger.d('Message ouvert depuis la notification: ${message.notification?.title}');
     }
 
     // Naviguer vers la route spécifiée dans les données
@@ -108,7 +111,7 @@ class NotificationService {
   // Gérer le message initial (app ouverte depuis une notification)
   void _handleInitialMessage(RemoteMessage message) {
     if (kDebugMode) {
-      print('Message initial: ${message.notification?.title}');
+      logger.d('Message initial: ${message.notification?.title}');
     }
 
     // Naviguer vers la route spécifiée dans les données
@@ -174,7 +177,7 @@ class NotificationService {
       // Note: Dans une application réelle, cela serait fait via une fonction Cloud
       // car les clés FCM ne doivent pas être exposées côté client
       if (kDebugMode) {
-        print('Envoi de notification à ${tokens.length} destinataires');
+        logger.i('Envoi de notification à ${tokens.length} destinataires');
       }
 
       // Simuler l'envoi pour la démonstration
@@ -182,7 +185,7 @@ class NotificationService {
 
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de l\'envoi de la notification: ${e.toString()}');
+        logger.e('Erreur lors de l\'envoi de la notification: ${e.toString()}');
       }
       throw Exception('Erreur lors de l\'envoi de la notification: ${e.toString()}');
     }
@@ -219,7 +222,7 @@ class NotificationService {
       return notifications;
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de la récupération des notifications: ${e.toString()}');
+        logger.e('Erreur lors de la récupération des notifications: ${e.toString()}');
       }
       return [];
     }
