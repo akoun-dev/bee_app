@@ -79,8 +79,8 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
     final query = _searchQuery.toLowerCase();
     return agents.where((agent) {
       return agent.fullName.toLowerCase().contains(query) ||
-             agent.profession.toLowerCase().contains(query) ||
-             agent.matricule.toLowerCase().contains(query);
+          agent.profession.toLowerCase().contains(query) ||
+          agent.matricule.toLowerCase().contains(query);
     }).toList();
   }
 
@@ -91,23 +91,23 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
     final ageController = TextEditingController(text: agent?.age.toString());
     final professionController = TextEditingController(text: agent?.profession);
     final backgroundController = TextEditingController(text: agent?.background);
-    final educationLevelController = TextEditingController(text: agent?.educationLevel);
+    final educationLevelController = TextEditingController(
+      text: agent?.educationLevel,
+    );
     final matriculeController = TextEditingController(text: agent?.matricule);
     final emailController = TextEditingController(text: agent?.email);
     final phoneController = TextEditingController(text: agent?.phoneNumber);
     final specialtyController = TextEditingController(text: agent?.specialty);
-    final experienceController = TextEditingController(text: agent?.experience?.toString() ?? '');
+    final experienceController = TextEditingController(
+      text: agent?.experience?.toString() ?? '',
+    );
 
-    // Valeurs pour les champs de sélection
+    // Valeurs pour les champs de sélection (en dehors du StatefulBuilder pour persister)
     String gender = agent?.gender ?? 'M';
     String bloodType = agent?.bloodType ?? 'A+';
     bool isCertified = agent?.isCertified ?? false;
     bool isAvailable = agent?.isAvailable ?? true;
-
-    // Index de l'onglet actif
     int activeTabIndex = 0;
-
-    // Image de profil
     File? imageFile;
 
     // Clé pour le formulaire
@@ -116,161 +116,193 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
     // Résultat du dialogue
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Container(
-            width: MediaQuery.of(context).size.width * 0.8,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // En-tête avec titre et bouton de fermeture
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      agent == null ? AppConstants.addAgent : AppConstants.editAgent,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
+      builder:
+          (context) => StatefulBuilder(
+            builder: (context, setState) {
+              return Dialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-
-                const Divider(),
-
-                // Contenu principal avec onglets
-                Flexible(
-                  child: Form(
-                    key: formKey,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Onglets
-                        Row(
-                          children: [
-                            _buildTabButton(
-                              context,
-                              'Informations personnelles',
-                              0,
-                              activeTabIndex,
-                              (index) => setState(() => activeTabIndex = index)
+                child: Container(
+                  width: MediaQuery.of(context).size.width * 0.8,
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // En-tête avec titre et bouton de fermeture
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            agent == null
+                                ? AppConstants.addAgent
+                                : AppConstants.editAgent,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
                             ),
-                            _buildTabButton(
-                              context,
-                              'Informations professionnelles',
-                              1,
-                              activeTabIndex,
-                              (index) => setState(() => activeTabIndex = index)
-                            ),
-                            _buildTabButton(
-                              context,
-                              'Statut',
-                              2,
-                              activeTabIndex,
-                              (index) => setState(() => activeTabIndex = index)
-                            ),
-                          ],
-                        ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                        ],
+                      ),
 
-                        const SizedBox(height: 16),
+                      const Divider(),
 
-                        // Contenu des onglets
-                        Flexible(
-                          child: SingleChildScrollView(
-                            child: [
-                              // Onglet 1: Informations personnelles
-                              _buildPersonalInfoTab(
-                                context,
-                                setState,
-                                fullNameController,
-                                ageController,
-                                gender,
-                                bloodType,
-                                emailController,
-                                phoneController,
-                                imageFile,
-                                agent,
+                      // Contenu principal avec onglets
+                      Flexible(
+                        child: Form(
+                          key: formKey,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Onglets
+                              Row(
+                                children: [
+                                  _buildTabButton(
+                                    context,
+                                    'Informations personnelles',
+                                    0,
+                                    activeTabIndex,
+                                    (index) =>
+                                        setState(() => activeTabIndex = index),
+                                  ),
+                                  _buildTabButton(
+                                    context,
+                                    'Informations professionnelles',
+                                    1,
+                                    activeTabIndex,
+                                    (index) =>
+                                        setState(() => activeTabIndex = index),
+                                  ),
+                                  _buildTabButton(
+                                    context,
+                                    'Statut',
+                                    2,
+                                    activeTabIndex,
+                                    (index) =>
+                                        setState(() => activeTabIndex = index),
+                                  ),
+                                ],
                               ),
 
-                              // Onglet 2: Informations professionnelles
-                              _buildProfessionalInfoTab(
-                                professionController,
-                                specialtyController,
-                                experienceController,
-                                backgroundController,
-                                educationLevelController,
-                                matriculeController,
-                              ),
+                              const SizedBox(height: 16),
 
-                              // Onglet 3: Statut
-                              _buildStatusTab(
-                                isCertified,
-                                isAvailable,
-                                setState,
+                              // Contenu des onglets
+                              Flexible(
+                                child: SingleChildScrollView(
+                                  child:
+                                      [
+                                        // Onglet 1: Informations personnelles
+                                        _buildPersonalInfoTab(
+                                          context,
+                                          setState,
+                                          fullNameController,
+                                          ageController,
+                                          gender,
+                                          bloodType,
+                                          emailController,
+                                          phoneController,
+                                          imageFile,
+                                          agent,
+                                          (value) =>
+                                              setState(() => gender = value),
+                                          (value) =>
+                                              setState(() => bloodType = value),
+                                          (value) =>
+                                              setState(() => imageFile = value),
+                                        ),
+
+                                        // Onglet 2: Informations professionnelles
+                                        _buildProfessionalInfoTab(
+                                          professionController,
+                                          specialtyController,
+                                          experienceController,
+                                          backgroundController,
+                                          educationLevelController,
+                                          matriculeController,
+                                        ),
+
+                                        // Onglet 3: Statut
+                                        _buildStatusTab(
+                                          isCertified,
+                                          isAvailable,
+                                          (value) => setState(
+                                            () => isCertified = value,
+                                          ),
+                                          (value) => setState(
+                                            () => isAvailable = value,
+                                          ),
+                                        ),
+                                      ][activeTabIndex],
+                                ),
                               ),
-                            ][activeTabIndex],
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+
+                      const Divider(),
+
+                      // Boutons d'action
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text('Annuler'),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.save),
+                            label: Text(agent == null ? 'Ajouter' : 'Modifier'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primaryColor,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                            ),
+                            onPressed: () {
+                              if (formKey.currentState!.validate()) {
+                                Navigator.of(context).pop({
+                                  'fullName': fullNameController.text.trim(),
+                                  'age':
+                                      int.tryParse(ageController.text.trim()) ??
+                                      0,
+                                  'gender': gender,
+                                  'bloodType': bloodType,
+                                  'profession':
+                                      professionController.text.trim(),
+                                  'specialty': specialtyController.text.trim(),
+                                  'experience': int.tryParse(
+                                    experienceController.text.trim(),
+                                  ),
+                                  'background':
+                                      backgroundController.text.trim(),
+                                  'educationLevel':
+                                      educationLevelController.text.trim(),
+                                  'matricule': matriculeController.text.trim(),
+                                  'email': emailController.text.trim(),
+                                  'phoneNumber': phoneController.text.trim(),
+                                  'isCertified': isCertified,
+                                  'isAvailable': isAvailable,
+                                  'imageFile': imageFile,
+                                });
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-
-                const Divider(),
-
-                // Boutons d'action
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Annuler'),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.save),
-                      label: Text(agent == null ? 'Ajouter' : 'Modifier'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      ),
-                      onPressed: () {
-                        if (formKey.currentState!.validate()) {
-                          Navigator.of(context).pop({
-                            'fullName': fullNameController.text.trim(),
-                            'age': int.tryParse(ageController.text.trim()) ?? 0,
-                            'gender': gender,
-                            'bloodType': bloodType,
-                            'profession': professionController.text.trim(),
-                            'specialty': specialtyController.text.trim(),
-                            'experience': int.tryParse(experienceController.text.trim()),
-                            'background': backgroundController.text.trim(),
-                            'educationLevel': educationLevelController.text.trim(),
-                            'matricule': matriculeController.text.trim(),
-                            'email': emailController.text.trim(),
-                            'phoneNumber': phoneController.text.trim(),
-                            'isCertified': isCertified,
-                            'isAvailable': isAvailable,
-                            'imageFile': imageFile,
-                          });
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              );
+            },
           ),
-        ),
-      ),
     );
 
     // Traiter le résultat
@@ -299,8 +331,14 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
   // Ajouter un nouvel agent
   Future<void> _addAgent(Map<String, dynamic> data) async {
     try {
-      final databaseService = Provider.of<DatabaseService>(context, listen: false);
-      final storageService = Provider.of<StorageService>(context, listen: false);
+      final databaseService = Provider.of<DatabaseService>(
+        context,
+        listen: false,
+      );
+      final storageService = Provider.of<StorageService>(
+        context,
+        listen: false,
+      );
 
       // Créer un nouvel agent
       final agent = AgentModel(
@@ -371,7 +409,9 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur lors de l\'ajout de l\'agent: ${e.toString()}'),
+            content: Text(
+              'Erreur lors de l\'ajout de l\'agent: ${e.toString()}',
+            ),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -382,8 +422,14 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
   // Mettre à jour un agent existant
   Future<void> _updateAgent(AgentModel agent, Map<String, dynamic> data) async {
     try {
-      final databaseService = Provider.of<DatabaseService>(context, listen: false);
-      final storageService = Provider.of<StorageService>(context, listen: false);
+      final databaseService = Provider.of<DatabaseService>(
+        context,
+        listen: false,
+      );
+      final storageService = Provider.of<StorageService>(
+        context,
+        listen: false,
+      );
 
       // Télécharger l'image de profil si elle a été modifiée
       String? profileImageUrl = agent.profileImageUrl;
@@ -432,7 +478,9 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur lors de la mise à jour de l\'agent: ${e.toString()}'),
+            content: Text(
+              'Erreur lors de la mise à jour de l\'agent: ${e.toString()}',
+            ),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -443,12 +491,13 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
   // Basculer le statut de certification d'un agent
   Future<void> _toggleCertification(AgentModel agent) async {
     try {
-      final databaseService = Provider.of<DatabaseService>(context, listen: false);
+      final databaseService = Provider.of<DatabaseService>(
+        context,
+        listen: false,
+      );
 
       // Créer un nouvel agent avec le statut de certification inversé
-      final updatedAgent = agent.copyWith(
-        isCertified: !agent.isCertified,
-      );
+      final updatedAgent = agent.copyWith(isCertified: !agent.isCertified);
 
       // Mettre à jour l'agent dans la base de données
       await databaseService.updateAgent(updatedAgent);
@@ -458,12 +507,11 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
           SnackBar(
             content: Text(
               updatedAgent.isCertified
-                ? 'Agent certifié avec succès'
-                : 'Certification de l\'agent retirée'
+                  ? 'Agent certifié avec succès'
+                  : 'Certification de l\'agent retirée',
             ),
-            backgroundColor: updatedAgent.isCertified
-                ? AppTheme.infoColor
-                : Colors.orange,
+            backgroundColor:
+                updatedAgent.isCertified ? AppTheme.infoColor : Colors.orange,
           ),
         );
       }
@@ -471,7 +519,9 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur lors de la mise à jour de la certification: ${e.toString()}'),
+            content: Text(
+              'Erreur lors de la mise à jour de la certification: ${e.toString()}',
+            ),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -482,37 +532,42 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
   // Basculer la disponibilité d'un agent
   Future<void> _toggleAvailability(AgentModel agent) async {
     try {
-      final databaseService = Provider.of<DatabaseService>(context, listen: false);
+      final databaseService = Provider.of<DatabaseService>(
+        context,
+        listen: false,
+      );
 
       // Si on essaie de rendre l'agent indisponible, vérifier s'il a des réservations en cours
       if (agent.isAvailable) {
-        final hasActiveReservations = await databaseService.hasActiveReservations(agent.id);
+        final hasActiveReservations = await databaseService
+            .hasActiveReservations(agent.id);
 
         if (hasActiveReservations) {
           if (mounted) {
             // Afficher une boîte de dialogue pour informer l'administrateur
             final result = await showDialog<bool>(
               context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Agent avec réservations en cours'),
-                content: const Text(
-                  'Cet agent a des réservations en cours ou en attente. '
-                  'Voulez-vous quand même le marquer comme indisponible?'
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    child: const Text('Annuler'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
+              builder:
+                  (context) => AlertDialog(
+                    title: const Text('Agent avec réservations en cours'),
+                    content: const Text(
+                      'Cet agent a des réservations en cours ou en attente. '
+                      'Voulez-vous quand même le marquer comme indisponible?',
                     ),
-                    child: const Text('Marquer indisponible'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: const Text('Annuler'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                        ),
+                        child: const Text('Marquer indisponible'),
+                      ),
+                    ],
                   ),
-                ],
-              ),
             );
 
             // Si l'administrateur annule, ne pas continuer
@@ -522,9 +577,7 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
       }
 
       // Créer un nouvel agent avec le statut de disponibilité inversé
-      final updatedAgent = agent.copyWith(
-        isAvailable: !agent.isAvailable,
-      );
+      final updatedAgent = agent.copyWith(isAvailable: !agent.isAvailable);
 
       // Mettre à jour l'agent dans la base de données
       await databaseService.updateAgent(updatedAgent);
@@ -534,12 +587,11 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
           SnackBar(
             content: Text(
               updatedAgent.isAvailable
-                ? 'Agent marqué comme disponible'
-                : 'Agent marqué comme indisponible'
+                  ? 'Agent marqué comme disponible'
+                  : 'Agent marqué comme indisponible',
             ),
-            backgroundColor: updatedAgent.isAvailable
-                ? Colors.green
-                : Colors.orange,
+            backgroundColor:
+                updatedAgent.isAvailable ? Colors.green : Colors.orange,
           ),
         );
       }
@@ -547,7 +599,9 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur lors de la mise à jour de la disponibilité: ${e.toString()}'),
+            content: Text(
+              'Erreur lors de la mise à jour de la disponibilité: ${e.toString()}',
+            ),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -558,29 +612,35 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
   // Supprimer un agent
   Future<void> _deleteAgent(AgentModel agent) async {
     // Stocker les services avant toute opération asynchrone
-    final databaseService = Provider.of<DatabaseService>(context, listen: false);
+    final databaseService = Provider.of<DatabaseService>(
+      context,
+      listen: false,
+    );
     final storageService = Provider.of<StorageService>(context, listen: false);
 
     // Demander confirmation
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirmer la suppression'),
-        content: Text('Êtes-vous sûr de vouloir supprimer l\'agent ${agent.fullName} ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.errorColor,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Confirmer la suppression'),
+            content: Text(
+              'Êtes-vous sûr de vouloir supprimer l\'agent ${agent.fullName} ?',
             ),
-            child: const Text('Supprimer'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Annuler'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.errorColor,
+                ),
+                child: const Text('Supprimer'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
 
     if (confirmed != true) return;
@@ -606,7 +666,9 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur lors de la suppression de l\'agent: ${e.toString()}'),
+            content: Text(
+              'Erreur lors de la suppression de l\'agent: ${e.toString()}',
+            ),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -662,6 +724,9 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
     TextEditingController phoneController,
     File? imageFile,
     AgentModel? agent,
+    Function(String) onGenderChanged,
+    Function(String) onBloodTypeChanged,
+    Function(File?) onImageChanged,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -674,37 +739,28 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
               // Avatar
               imageFile != null
                   ? CircleAvatar(
-                      radius: 50,
-                      backgroundImage: FileImage(imageFile),
-                    )
-                  : UserAvatar(
-                      imageUrl: agent?.profileImageUrl,
-                      name: agent?.fullName ?? 'Nouvel agent',
-                      size: 100,
-                    ),
+                    radius: 50,
+                    backgroundImage: FileImage(imageFile),
+                  )
+                  : const AgentAvatar(size: 100),
 
               // Bouton pour modifier la photo
               Container(
                 decoration: BoxDecoration(
                   color: AppTheme.primaryColor,
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white,
-                    width: 2,
-                  ),
+                  border: Border.all(color: Colors.white, width: 2),
                 ),
                 child: IconButton(
-                  icon: const Icon(
-                    Icons.camera_alt,
-                    color: Colors.white,
-                  ),
+                  icon: const Icon(Icons.camera_alt, color: Colors.white),
                   onPressed: () async {
-                    final storageService = Provider.of<StorageService>(context, listen: false);
+                    final storageService = Provider.of<StorageService>(
+                      context,
+                      listen: false,
+                    );
                     final pickedImage = await storageService.pickImage();
                     if (pickedImage != null) {
-                      setState(() {
-                        imageFile = pickedImage;
-                      });
+                      onImageChanged(pickedImage);
                     }
                   },
                 ),
@@ -787,20 +843,12 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
                   border: OutlineInputBorder(),
                 ),
                 items: const [
-                  DropdownMenuItem(
-                    value: 'M',
-                    child: Text('Homme'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'F',
-                    child: Text('Femme'),
-                  ),
+                  DropdownMenuItem(value: 'M', child: Text('Homme')),
+                  DropdownMenuItem(value: 'F', child: Text('Femme')),
                 ],
                 onChanged: (value) {
                   if (value != null) {
-                    setState(() {
-                      gender = value;
-                    });
+                    onGenderChanged(value);
                   }
                 },
               ),
@@ -829,9 +877,7 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
                 ],
                 onChanged: (value) {
                   if (value != null) {
-                    setState(() {
-                      bloodType = value;
-                    });
+                    onBloodTypeChanged(value);
                   }
                 },
               ),
@@ -1029,7 +1075,8 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
   Widget _buildStatusTab(
     bool isCertified,
     bool isAvailable,
-    StateSetter setState,
+    Function(bool) onCertifiedChanged,
+    Function(bool) onAvailableChanged,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1061,9 +1108,7 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
             value: isCertified,
             activeColor: AppTheme.infoColor,
             onChanged: (value) {
-              setState(() {
-                isCertified = value;
-              });
+              onCertifiedChanged(value);
             },
             secondary: Icon(
               Icons.verified,
@@ -1089,9 +1134,7 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
             value: isAvailable,
             activeColor: AppTheme.accentColor,
             onChanged: (value) {
-              setState(() {
-                isAvailable = value;
-              });
+              onAvailableChanged(value);
             },
             secondary: Icon(
               Icons.event_available,
@@ -1112,10 +1155,7 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
               children: [
                 Text(
                   'Informations sur le statut',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
                 SizedBox(height: 8),
                 Text(
@@ -1175,17 +1215,18 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
                   decoration: InputDecoration(
                     hintText: 'Rechercher un agent...',
                     prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() {
-                                _searchQuery = '';
-                              });
-                            },
-                          )
-                        : null,
+                    suffixIcon:
+                        _searchQuery.isNotEmpty
+                            ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() {
+                                  _searchQuery = '';
+                                });
+                              },
+                            )
+                            : null,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -1213,14 +1254,20 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
                       },
                       avatar: Icon(
                         Icons.event_busy,
-                        color: _showOnlyWithReservations ? Colors.white : Colors.grey,
+                        color:
+                            _showOnlyWithReservations
+                                ? Colors.white
+                                : Colors.grey,
                         size: 18,
                       ),
                       backgroundColor: Colors.grey[200],
                       selectedColor: AppTheme.primaryColor,
                       checkmarkColor: Colors.white,
                       labelStyle: TextStyle(
-                        color: _showOnlyWithReservations ? Colors.white : Colors.black,
+                        color:
+                            _showOnlyWithReservations
+                                ? Colors.white
+                                : Colors.black,
                       ),
                     ),
                   ],
@@ -1231,91 +1278,93 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
 
           // Liste des agents
           Expanded(
-            child: _showOnlyWithReservations
-                ? StreamBuilder<List<AgentModel>>(
-                    stream: databaseService.getAgentsWithReservations(),
-                    builder: (context, snapshot) {
-                      // Afficher un indicateur de chargement
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const LoadingIndicator(
-                          message: 'Chargement des agents en réservation...',
+            child:
+                _showOnlyWithReservations
+                    ? StreamBuilder<List<AgentModel>>(
+                      stream: databaseService.getAgentsWithReservations(),
+                      builder: (context, snapshot) {
+                        // Afficher un indicateur de chargement
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const LoadingIndicator(
+                            message: 'Chargement des agents en réservation...',
+                          );
+                        }
+
+                        // Afficher un message d'erreur
+                        if (snapshot.hasError) {
+                          return ErrorMessage(
+                            message: 'Erreur: ${snapshot.error}',
+                            onRetry: () => setState(() {}),
+                          );
+                        }
+
+                        // Récupérer et filtrer les agents
+                        final agents = snapshot.data ?? [];
+                        final filteredAgents = _filterAgents(agents);
+
+                        // Afficher un message si aucun agent n'est trouvé
+                        if (filteredAgents.isEmpty) {
+                          return const EmptyMessage(
+                            message: 'Aucun agent en réservation trouvé',
+                            icon: Icons.event_busy,
+                          );
+                        }
+
+                        // Afficher la liste des agents
+                        return ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: filteredAgents.length,
+                          itemBuilder: (context, index) {
+                            final agent = filteredAgents[index];
+                            return _buildAgentCard(agent);
+                          },
                         );
-                      }
+                      },
+                    )
+                    : StreamBuilder<List<AgentModel>>(
+                      stream: databaseService.getAgents(),
+                      builder: (context, snapshot) {
+                        // Afficher un indicateur de chargement
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const LoadingIndicator(
+                            message: 'Chargement des agents...',
+                          );
+                        }
 
-                      // Afficher un message d'erreur
-                      if (snapshot.hasError) {
-                        return ErrorMessage(
-                          message: 'Erreur: ${snapshot.error}',
-                          onRetry: () => setState(() {}),
+                        // Afficher un message d'erreur
+                        if (snapshot.hasError) {
+                          return ErrorMessage(
+                            message: 'Erreur: ${snapshot.error}',
+                            onRetry: () => setState(() {}),
+                          );
+                        }
+
+                        // Récupérer et filtrer les agents
+                        final agents = snapshot.data ?? [];
+                        final filteredAgents = _filterAgents(agents);
+
+                        // Afficher un message si aucun agent n'est trouvé
+                        if (filteredAgents.isEmpty) {
+                          return const EmptyMessage(
+                            message: 'Aucun agent trouvé',
+                            icon: Icons.person_off,
+                          );
+                        }
+
+                        // Afficher la liste des agents
+                        return ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: filteredAgents.length,
+                          itemBuilder: (context, index) {
+                            final agent = filteredAgents[index];
+                            return _buildAgentCard(agent);
+                          },
                         );
-                      }
-
-                      // Récupérer et filtrer les agents
-                      final agents = snapshot.data ?? [];
-                      final filteredAgents = _filterAgents(agents);
-
-                      // Afficher un message si aucun agent n'est trouvé
-                      if (filteredAgents.isEmpty) {
-                        return const EmptyMessage(
-                          message: 'Aucun agent en réservation trouvé',
-                          icon: Icons.event_busy,
-                        );
-                      }
-
-                      // Afficher la liste des agents
-                      return ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: filteredAgents.length,
-                        itemBuilder: (context, index) {
-                          final agent = filteredAgents[index];
-                          return _buildAgentCard(agent);
-                        },
-                      );
-                    },
-                  )
-                : StreamBuilder<List<AgentModel>>(
-                    stream: databaseService.getAgents(),
-                    builder: (context, snapshot) {
-                      // Afficher un indicateur de chargement
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const LoadingIndicator(
-                          message: 'Chargement des agents...',
-                        );
-                      }
-
-                      // Afficher un message d'erreur
-                      if (snapshot.hasError) {
-                        return ErrorMessage(
-                          message: 'Erreur: ${snapshot.error}',
-                          onRetry: () => setState(() {}),
-                        );
-                      }
-
-                      // Récupérer et filtrer les agents
-                      final agents = snapshot.data ?? [];
-                      final filteredAgents = _filterAgents(agents);
-
-                      // Afficher un message si aucun agent n'est trouvé
-                      if (filteredAgents.isEmpty) {
-                        return const EmptyMessage(
-                          message: 'Aucun agent trouvé',
-                          icon: Icons.person_off,
-                        );
-                      }
-
-                      // Afficher la liste des agents
-                      return ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: filteredAgents.length,
-                        itemBuilder: (context, index) {
-                          final agent = filteredAgents[index];
-                          return _buildAgentCard(agent);
-                        },
-                      );
-                    },
-                  ),
+                      },
+                    ),
           ),
-
         ],
       ),
       // Bouton flottant pour ajouter un agent
@@ -1335,31 +1384,31 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         color: AppTheme.errorColor,
-        child: const Icon(
-          Icons.delete,
-          color: Colors.white,
-        ),
+        child: const Icon(Icons.delete, color: Colors.white),
       ),
       confirmDismiss: (direction) async {
         return await showDialog<bool>(
           context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Confirmer la suppression'),
-            content: Text('Êtes-vous sûr de vouloir supprimer l\'agent ${agent.fullName} ?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Annuler'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.errorColor,
+          builder:
+              (context) => AlertDialog(
+                title: const Text('Confirmer la suppression'),
+                content: Text(
+                  'Êtes-vous sûr de vouloir supprimer l\'agent ${agent.fullName} ?',
                 ),
-                child: const Text('Supprimer'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('Annuler'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.errorColor,
+                    ),
+                    child: const Text('Supprimer'),
+                  ),
+                ],
               ),
-            ],
-          ),
         );
       },
       onDismissed: (direction) {
@@ -1392,19 +1441,28 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
                       TextButton.icon(
                         icon: Icon(
                           Icons.verified,
-                          color: agent.isCertified ? AppTheme.infoColor : Colors.grey,
+                          color:
+                              agent.isCertified
+                                  ? AppTheme.infoColor
+                                  : Colors.grey,
                           size: 20,
                         ),
                         label: Text(
                           agent.isCertified ? 'Certifié' : 'Certifier',
                           style: TextStyle(
-                            color: agent.isCertified ? AppTheme.infoColor : Colors.grey,
+                            color:
+                                agent.isCertified
+                                    ? AppTheme.infoColor
+                                    : Colors.grey,
                             fontSize: 12,
                           ),
                         ),
                         onPressed: () => _toggleCertification(agent),
                         style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -1418,13 +1476,17 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
                         label: Text(
                           agent.isAvailable ? 'Disponible' : 'Indisponible',
                           style: TextStyle(
-                            color: agent.isAvailable ? Colors.green : Colors.red,
+                            color:
+                                agent.isAvailable ? Colors.green : Colors.red,
                             fontSize: 12,
                           ),
                         ),
                         onPressed: () => _toggleAvailability(agent),
                         style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                         ),
                       ),
                     ],

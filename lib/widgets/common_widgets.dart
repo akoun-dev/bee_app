@@ -27,16 +27,17 @@ class PrimaryButton extends StatelessWidget {
       width: isFullWidth ? double.infinity : null,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
-        child: isLoading
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
-            : Text(text),
+        child:
+            isLoading
+                ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                )
+                : Text(text),
       ),
     );
   }
@@ -59,10 +60,7 @@ class SecondaryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: isFullWidth ? double.infinity : null,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        child: Text(text),
-      ),
+      child: OutlinedButton(onPressed: onPressed, child: Text(text)),
     );
   }
 }
@@ -96,10 +94,7 @@ class CustomTextField extends StatelessWidget {
       keyboardType: keyboardType,
       validator: validator,
       maxLines: maxLines,
-      decoration: InputDecoration(
-        labelText: label,
-        suffixIcon: suffixIcon,
-      ),
+      decoration: InputDecoration(labelText: label, suffixIcon: suffixIcon),
     );
   }
 }
@@ -110,27 +105,22 @@ class UserAvatar extends StatelessWidget {
   final double size;
   final String? name;
 
-  const UserAvatar({
-    super.key,
-    this.imageUrl,
-    this.size = 40,
-    this.name,
-  });
+  const UserAvatar({super.key, this.imageUrl, this.size = 40, this.name});
 
   @override
   Widget build(BuildContext context) {
     if (imageUrl != null && imageUrl!.isNotEmpty) {
       return CachedNetworkImage(
         imageUrl: imageUrl!,
-        imageBuilder: (context, imageProvider) => CircleAvatar(
-          radius: size / 2,
-          backgroundImage: imageProvider,
-        ),
-        placeholder: (context, url) => CircleAvatar(
-          radius: size / 2,
-          backgroundColor: AppTheme.lightColor,
-          child: const CircularProgressIndicator(),
-        ),
+        imageBuilder:
+            (context, imageProvider) =>
+                CircleAvatar(radius: size / 2, backgroundImage: imageProvider),
+        placeholder:
+            (context, url) => CircleAvatar(
+              radius: size / 2,
+              backgroundColor: AppTheme.lightColor,
+              child: const CircularProgressIndicator(),
+            ),
         errorWidget: (context, url, error) => _buildFallbackAvatar(),
       );
     } else {
@@ -152,6 +142,75 @@ class UserAvatar extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// Avatar spécialisé pour les agents - utilise toujours l'image guard.png
+class AgentAvatar extends StatelessWidget {
+  final double size;
+  final String? name;
+  final bool isCircular;
+
+  const AgentAvatar({
+    super.key,
+    this.size = 40,
+    this.name,
+    this.isCircular = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (isCircular) {
+      return CircleAvatar(
+        radius: size / 2,
+        backgroundImage: const AssetImage('assets/images/guard.png'),
+        backgroundColor: AppTheme.lightColor,
+      );
+    } else {
+      return Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          image: const DecorationImage(
+            image: AssetImage('assets/images/guard.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    }
+  }
+}
+
+// Widget pour les images d'agents en format rectangulaire
+class AgentImage extends StatelessWidget {
+  final double? width;
+  final double? height;
+  final BoxFit fit;
+  final BorderRadius? borderRadius;
+
+  const AgentImage({
+    super.key,
+    this.width,
+    this.height,
+    this.fit = BoxFit.cover,
+    this.borderRadius,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Widget image = Image.asset(
+      'assets/images/guard.png',
+      width: width,
+      height: height,
+      fit: fit,
+    );
+
+    if (borderRadius != null) {
+      return ClipRRect(borderRadius: borderRadius!, child: image);
+    }
+
+    return image;
   }
 }
 
@@ -184,10 +243,9 @@ class RatingDisplay extends StatelessWidget {
             itemCount: 5,
             itemSize: size,
             ignoreGestures: true,
-            itemBuilder: (context, _) => const Icon(
-              Icons.star,
-              color: AppTheme.secondaryColor,
-            ),
+            itemBuilder:
+                (context, _) =>
+                    const Icon(Icons.star, color: AppTheme.secondaryColor),
             onRatingUpdate: (_) {},
           ),
         ),
@@ -195,10 +253,7 @@ class RatingDisplay extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             '($ratingCount)',
-            style: TextStyle(
-              color: AppTheme.mediumColor,
-              fontSize: size * 0.8,
-            ),
+            style: TextStyle(color: AppTheme.mediumColor, fontSize: size * 0.8),
             overflow: TextOverflow.ellipsis,
           ),
         ],
@@ -211,10 +266,7 @@ class RatingDisplay extends StatelessWidget {
 class StatusBadge extends StatelessWidget {
   final String status;
 
-  const StatusBadge({
-    super.key,
-    required this.status,
-  });
+  const StatusBadge({super.key, required this.status});
 
   @override
   Widget build(BuildContext context) {
@@ -270,10 +322,7 @@ class StatusBadge extends StatelessWidget {
 class LoadingIndicator extends StatelessWidget {
   final String? message;
 
-  const LoadingIndicator({
-    super.key,
-    this.message,
-  });
+  const LoadingIndicator({super.key, this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -303,11 +352,7 @@ class ErrorMessage extends StatelessWidget {
   final String message;
   final VoidCallback? onRetry;
 
-  const ErrorMessage({
-    super.key,
-    required this.message,
-    this.onRetry,
-  });
+  const ErrorMessage({super.key, required this.message, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -362,11 +407,7 @@ class EmptyMessage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              color: AppTheme.mediumColor,
-              size: 48,
-            ),
+            Icon(icon, color: AppTheme.mediumColor, size: 48),
             const SizedBox(height: 16),
             Text(
               message,

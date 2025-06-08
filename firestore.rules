@@ -33,13 +33,25 @@ service cloud.firestore {
     // Agents (lecture publique, écriture réservée aux admins)
     match /agents/{agentId} {
       allow read: if true;
-      allow create, update, delete: if request.auth.token.admin == true;
+      allow create, delete: if isAdmin();
+      // Permettre aux utilisateurs authentifiés de mettre à jour seulement les champs de notation
+      allow update: if isAdmin() || (
+        isAuthenticated() &&
+        // Vérifier que seuls les champs de notation sont modifiés
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['averageRating', 'ratingCount']) &&
+        // Vérifier que les autres champs restent inchangés
+        request.resource.data.fullName == resource.data.fullName &&
+        request.resource.data.age == resource.data.age &&
+        request.resource.data.gender == resource.data.gender &&
+        request.resource.data.profession == resource.data.profession
+      );
     }
 
     // Réservations (lecture/écriture par le créateur ou admin)
     match /reservations/{reservationId} {
-      allow read, write: if request.auth != null
-        && (request.auth.uid == resource.data.userId || request.auth.token.admin == true);
+      allow read, write: if isAuthenticated() &&
+        (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if isAuthenticated();
     }
 
     // Avis (lecture publique, écriture par utilisateur connecté)

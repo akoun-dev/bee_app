@@ -24,7 +24,7 @@ class ReviewSubmissionScreen extends StatefulWidget {
 
 class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
   final _formKey = GlobalKey<FormState>();
-  TextEditingController _commentController = TextEditingController();
+  final TextEditingController _commentController = TextEditingController();
 
   bool _isLoading = true;
   String? _errorMessage;

@@ -9,14 +9,14 @@ class DatabaseService {
   // Nous n'utilisons pas directement _firestore, mais nous utilisons les références de collection
 
   // Collections
-  final CollectionReference _usersCollection =
-      FirebaseFirestore.instance.collection('users');
-  final CollectionReference _agentsCollection =
-      FirebaseFirestore.instance.collection('agents');
-  final CollectionReference _reservationsCollection =
-      FirebaseFirestore.instance.collection('reservations');
-  final CollectionReference _reviewsCollection =
-      FirebaseFirestore.instance.collection('reviews');
+  final CollectionReference _usersCollection = FirebaseFirestore.instance
+      .collection('users');
+  final CollectionReference _agentsCollection = FirebaseFirestore.instance
+      .collection('agents');
+  final CollectionReference _reservationsCollection = FirebaseFirestore.instance
+      .collection('reservations');
+  final CollectionReference _reviewsCollection = FirebaseFirestore.instance
+      .collection('reviews');
 
   // ===== UTILISATEURS =====
 
@@ -28,7 +28,7 @@ class DatabaseService {
 
       return UserModel.fromMap(
         docSnapshot.data() as Map<String, dynamic>,
-        docSnapshot.id
+        docSnapshot.id,
       );
     } catch (e) {
       // Utiliser un logger en production au lieu de print
@@ -40,12 +40,17 @@ class DatabaseService {
   // Récupérer tous les utilisateurs (pour admin)
   Stream<List<UserModel>> getAllUsers() {
     // Version simplifiée sans tri par date (en attendant que l'index soit créé)
-    return _usersCollection
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => UserModel.fromMap(
-                doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+    return _usersCollection.snapshots().map(
+      (snapshot) =>
+          snapshot.docs
+              .map(
+                (doc) => UserModel.fromMap(
+                  doc.data() as Map<String, dynamic>,
+                  doc.id,
+                ),
+              )
+              .toList(),
+    );
 
     // Décommentez cette version une fois que l'index est créé :
     /*
@@ -65,10 +70,17 @@ class DatabaseService {
     return _usersCollection
         .where('isAdmin', isEqualTo: false)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => UserModel.fromMap(
-                doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map(
+                    (doc) => UserModel.fromMap(
+                      doc.data() as Map<String, dynamic>,
+                      doc.id,
+                    ),
+                  )
+                  .toList(),
+        );
 
     // Décommentez cette version une fois que l'index est créé :
     /*
@@ -88,7 +100,9 @@ class DatabaseService {
     try {
       await _usersCollection.doc(user.uid).update(user.toMap());
     } catch (e) {
-      throw Exception('Erreur lors de la mise à jour de l\'utilisateur: ${e.toString()}');
+      throw Exception(
+        'Erreur lors de la mise à jour de l\'utilisateur: ${e.toString()}',
+      );
     }
   }
 
@@ -97,7 +111,9 @@ class DatabaseService {
     try {
       await _usersCollection.doc(userId).delete();
     } catch (e) {
-      throw Exception('Erreur lors de la suppression de l\'utilisateur: ${e.toString()}');
+      throw Exception(
+        'Erreur lors de la suppression de l\'utilisateur: ${e.toString()}',
+      );
     }
   }
 
@@ -108,10 +124,17 @@ class DatabaseService {
     return _agentsCollection
         .orderBy('fullName')
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => AgentModel.fromMap(
-                doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map(
+                    (doc) => AgentModel.fromMap(
+                      doc.data() as Map<String, dynamic>,
+                      doc.id,
+                    ),
+                  )
+                  .toList(),
+        );
   }
 
   // Récupérer les agents disponibles
@@ -120,10 +143,17 @@ class DatabaseService {
         .where('isAvailable', isEqualTo: true)
         .orderBy('fullName')
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => AgentModel.fromMap(
-                doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map(
+                    (doc) => AgentModel.fromMap(
+                      doc.data() as Map<String, dynamic>,
+                      doc.id,
+                    ),
+                  )
+                  .toList(),
+        );
   }
 
   // Récupérer les agents certifiés
@@ -132,10 +162,17 @@ class DatabaseService {
         .where('isCertified', isEqualTo: true)
         .orderBy('fullName')
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => AgentModel.fromMap(
-                doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map(
+                    (doc) => AgentModel.fromMap(
+                      doc.data() as Map<String, dynamic>,
+                      doc.id,
+                    ),
+                  )
+                  .toList(),
+        );
   }
 
   // Récupérer les agents disponibles et certifiés
@@ -145,10 +182,17 @@ class DatabaseService {
         .where('isCertified', isEqualTo: true)
         .orderBy('fullName')
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => AgentModel.fromMap(
-                doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map(
+                    (doc) => AgentModel.fromMap(
+                      doc.data() as Map<String, dynamic>,
+                      doc.id,
+                    ),
+                  )
+                  .toList(),
+        );
   }
 
   // Récupérer les agents par profession
@@ -157,10 +201,17 @@ class DatabaseService {
         .where('profession', isEqualTo: profession)
         .orderBy('fullName')
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => AgentModel.fromMap(
-                doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map(
+                    (doc) => AgentModel.fromMap(
+                      doc.data() as Map<String, dynamic>,
+                      doc.id,
+                    ),
+                  )
+                  .toList(),
+        );
   }
 
   // Récupérer les professions disponibles
@@ -172,7 +223,8 @@ class DatabaseService {
       final Set<String> professions = {};
       for (var doc in querySnapshot.docs) {
         final data = doc.data() as Map<String, dynamic>;
-        if (data['profession'] != null && data['profession'].toString().isNotEmpty) {
+        if (data['profession'] != null &&
+            data['profession'].toString().isNotEmpty) {
           professions.add(data['profession'].toString());
         }
       }
@@ -194,7 +246,7 @@ class DatabaseService {
 
       return AgentModel.fromMap(
         docSnapshot.data() as Map<String, dynamic>,
-        docSnapshot.id
+        docSnapshot.id,
       );
     } catch (e) {
       // Utiliser un logger en production au lieu de print
@@ -206,18 +258,16 @@ class DatabaseService {
   // Récupérer un agent par matricule
   Future<AgentModel?> getAgentByMatricule(String matricule) async {
     try {
-      final querySnapshot = await _agentsCollection
-          .where('matricule', isEqualTo: matricule)
-          .limit(1)
-          .get();
+      final querySnapshot =
+          await _agentsCollection
+              .where('matricule', isEqualTo: matricule)
+              .limit(1)
+              .get();
 
       if (querySnapshot.docs.isEmpty) return null;
 
       final doc = querySnapshot.docs.first;
-      return AgentModel.fromMap(
-        doc.data() as Map<String, dynamic>,
-        doc.id
-      );
+      return AgentModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
     } catch (e) {
       // Utiliser un logger en production au lieu de print
       // Logger.error('Erreur lors de la récupération de l\'agent par matricule: ${e.toString()}');
@@ -238,9 +288,18 @@ class DatabaseService {
   // Mettre à jour un agent
   Future<void> updateAgent(AgentModel agent) async {
     try {
+      // Vérifier que l'agent existe avant la mise à jour
+      final docSnapshot = await _agentsCollection.doc(agent.id).get();
+      if (!docSnapshot.exists) {
+        throw Exception('Agent introuvable avec l\'ID: ${agent.id}');
+      }
+
+      // Effectuer la mise à jour
       await _agentsCollection.doc(agent.id).update(agent.toMap());
     } catch (e) {
-      throw Exception('Erreur lors de la mise à jour de l\'agent: ${e.toString()}');
+      throw Exception(
+        'Erreur lors de la mise à jour de l\'agent: ${e.toString()}',
+      );
     }
   }
 
@@ -249,7 +308,9 @@ class DatabaseService {
     try {
       await _agentsCollection.doc(agentId).delete();
     } catch (e) {
-      throw Exception('Erreur lors de la suppression de l\'agent: ${e.toString()}');
+      throw Exception(
+        'Erreur lors de la suppression de l\'agent: ${e.toString()}',
+      );
     }
   }
 
@@ -261,10 +322,17 @@ class DatabaseService {
         .where('userId', isEqualTo: userId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => ReservationModel.fromMap(
-                doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map(
+                    (doc) => ReservationModel.fromMap(
+                      doc.data() as Map<String, dynamic>,
+                      doc.id,
+                    ),
+                  )
+                  .toList(),
+        );
   }
 
   // Récupérer toutes les réservations en attente (pour admin)
@@ -273,10 +341,17 @@ class DatabaseService {
         .where('status', isEqualTo: ReservationModel.statusPending)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => ReservationModel.fromMap(
-                doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map(
+                    (doc) => ReservationModel.fromMap(
+                      doc.data() as Map<String, dynamic>,
+                      doc.id,
+                    ),
+                  )
+                  .toList(),
+        );
   }
 
   // Récupérer toutes les réservations (pour admin)
@@ -284,10 +359,17 @@ class DatabaseService {
     return _reservationsCollection
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => ReservationModel.fromMap(
-                doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map(
+                    (doc) => ReservationModel.fromMap(
+                      doc.data() as Map<String, dynamic>,
+                      doc.id,
+                    ),
+                  )
+                  .toList(),
+        );
   }
 
   // Récupérer les réservations en cours (approuvées et non terminées)
@@ -299,16 +381,25 @@ class DatabaseService {
         .orderBy('startDate')
         .snapshots()
         .map((snapshot) {
-          final reservations = snapshot.docs
-              .map((doc) => ReservationModel.fromMap(
-                  doc.data() as Map<String, dynamic>, doc.id))
-              .toList();
+          final reservations =
+              snapshot.docs
+                  .map(
+                    (doc) => ReservationModel.fromMap(
+                      doc.data() as Map<String, dynamic>,
+                      doc.id,
+                    ),
+                  )
+                  .toList();
 
           // Filtrer pour ne garder que les réservations dont la date de fin est dans le futur
           // et la date de début est passée (réservations en cours)
-          return reservations.where((reservation) =>
-            reservation.startDate.isBefore(now) &&
-            reservation.endDate.isAfter(now)).toList();
+          return reservations
+              .where(
+                (reservation) =>
+                    reservation.startDate.isBefore(now) &&
+                    reservation.endDate.isAfter(now),
+              )
+              .toList();
         });
   }
 
@@ -316,13 +407,17 @@ class DatabaseService {
   Future<bool> hasActiveReservations(String agentId) async {
     try {
       // Rechercher les réservations qui sont en cours ou à venir
-      final querySnapshot = await _reservationsCollection
-          .where('agentId', isEqualTo: agentId)
-          .where('status', whereIn: [
-            ReservationModel.statusPending,
-            ReservationModel.statusApproved
-          ])
-          .get();
+      final querySnapshot =
+          await _reservationsCollection
+              .where('agentId', isEqualTo: agentId)
+              .where(
+                'status',
+                whereIn: [
+                  ReservationModel.statusPending,
+                  ReservationModel.statusApproved,
+                ],
+              )
+              .get();
 
       // Vérifier si des réservations existent
       return querySnapshot.docs.isNotEmpty;
@@ -339,29 +434,38 @@ class DatabaseService {
       final agents = await _agentsCollection.get();
 
       // Récupérer toutes les réservations actives
-      final activeReservations = await _reservationsCollection
-          .where('status', whereIn: [
-            ReservationModel.statusPending,
-            ReservationModel.statusApproved
-          ])
-          .get();
+      final activeReservations =
+          await _reservationsCollection
+              .where(
+                'status',
+                whereIn: [
+                  ReservationModel.statusPending,
+                  ReservationModel.statusApproved,
+                ],
+              )
+              .get();
 
       // Créer un ensemble des IDs d'agents avec des réservations actives
       final Set<String> agentIdsWithReservations = {};
       for (var doc in activeReservations.docs) {
         final reservation = ReservationModel.fromMap(
           doc.data() as Map<String, dynamic>,
-          doc.id
+          doc.id,
         );
         agentIdsWithReservations.add(reservation.agentId);
       }
 
       // Filtrer les agents qui ont des réservations actives
-      final agentsWithReservations = agents.docs
-          .where((doc) => agentIdsWithReservations.contains(doc.id))
-          .map((doc) => AgentModel.fromMap(
-              doc.data() as Map<String, dynamic>, doc.id))
-          .toList();
+      final agentsWithReservations =
+          agents.docs
+              .where((doc) => agentIdsWithReservations.contains(doc.id))
+              .map(
+                (doc) => AgentModel.fromMap(
+                  doc.data() as Map<String, dynamic>,
+                  doc.id,
+                ),
+              )
+              .toList();
 
       yield agentsWithReservations;
     } catch (e) {
@@ -373,12 +477,13 @@ class DatabaseService {
   // Récupérer une réservation par ID
   Future<ReservationModel?> getReservation(String reservationId) async {
     try {
-      final docSnapshot = await _reservationsCollection.doc(reservationId).get();
+      final docSnapshot =
+          await _reservationsCollection.doc(reservationId).get();
       if (!docSnapshot.exists) return null;
 
       return ReservationModel.fromMap(
         docSnapshot.data() as Map<String, dynamic>,
-        docSnapshot.id
+        docSnapshot.id,
       );
     } catch (e) {
       // Utiliser un logger en production au lieu de print
@@ -393,16 +498,22 @@ class DatabaseService {
       final docRef = await _reservationsCollection.add(reservation.toMap());
       return docRef.id;
     } catch (e) {
-      throw Exception('Erreur lors de l\'ajout de la réservation: ${e.toString()}');
+      throw Exception(
+        'Erreur lors de l\'ajout de la réservation: ${e.toString()}',
+      );
     }
   }
 
   // Mettre à jour une réservation
   Future<void> updateReservation(ReservationModel reservation) async {
     try {
-      await _reservationsCollection.doc(reservation.id).update(reservation.toMap());
+      await _reservationsCollection
+          .doc(reservation.id)
+          .update(reservation.toMap());
     } catch (e) {
-      throw Exception('Erreur lors de la mise à jour de la réservation: ${e.toString()}');
+      throw Exception(
+        'Erreur lors de la mise à jour de la réservation: ${e.toString()}',
+      );
     }
   }
 
@@ -414,38 +525,119 @@ class DatabaseService {
         .where('agentId', isEqualTo: agentId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => ReviewModel.fromMap(
-                doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map(
+                    (doc) => ReviewModel.fromMap(
+                      doc.data() as Map<String, dynamic>,
+                      doc.id,
+                    ),
+                  )
+                  .toList(),
+        );
   }
 
   // Ajouter un nouvel avis
   Future<String> addReview(ReviewModel review) async {
     try {
+      // Vérifier que l'agent existe
+      final agent = await getAgent(review.agentId);
+      if (agent == null) {
+        throw Exception('Agent introuvable avec l\'ID: ${review.agentId}');
+      }
+
+      // Vérifier que la réservation existe
+      final reservation = await getReservation(review.reservationId);
+      if (reservation == null) {
+        throw Exception(
+          'Réservation introuvable avec l\'ID: ${review.reservationId}',
+        );
+      }
+
       // Ajouter l'avis
       final docRef = await _reviewsCollection.add(review.toMap());
 
-      // Mettre à jour la note moyenne de l'agent
-      final agent = await getAgent(review.agentId);
-      if (agent != null) {
+      // Essayer de mettre à jour la note moyenne de l'agent
+      try {
         final updatedAgent = agent.updateRating(review.rating);
         await updateAgent(updatedAgent);
+      } catch (agentUpdateError) {
+        // Si la mise à jour de l'agent échoue, on continue quand même
+        // L'avis a été créé avec succès, c'est le plus important
+        print(
+          'Avertissement: Impossible de mettre à jour la note de l\'agent: $agentUpdateError',
+        );
       }
 
-      // Mettre à jour la réservation avec la note et le commentaire
-      final reservation = await getReservation(review.reservationId);
-      if (reservation != null) {
+      // Essayer de mettre à jour la réservation avec la note et le commentaire
+      try {
         final updatedReservation = reservation.addRating(
           review.rating,
-          review.comment
+          review.comment,
         );
         await updateReservation(updatedReservation);
+      } catch (reservationUpdateError) {
+        // Si la mise à jour de la réservation échoue, on continue quand même
+        print(
+          'Avertissement: Impossible de mettre à jour la réservation: $reservationUpdateError',
+        );
       }
 
       return docRef.id;
     } catch (e) {
       throw Exception('Erreur lors de l\'ajout de l\'avis: ${e.toString()}');
+    }
+  }
+
+  // Recalculer la note moyenne d'un agent basée sur tous ses avis
+  Future<void> recalculateAgentRating(String agentId) async {
+    try {
+      // Récupérer tous les avis pour cet agent
+      final reviewsSnapshot =
+          await _reviewsCollection.where('agentId', isEqualTo: agentId).get();
+
+      if (reviewsSnapshot.docs.isEmpty) {
+        // Aucun avis, remettre à zéro
+        final agent = await getAgent(agentId);
+        if (agent != null) {
+          final updatedAgent = agent.copyWith(
+            averageRating: 0.0,
+            ratingCount: 0,
+          );
+          await updateAgent(updatedAgent);
+        }
+        return;
+      }
+
+      // Calculer la nouvelle moyenne
+      double totalRating = 0.0;
+      int count = 0;
+
+      for (var doc in reviewsSnapshot.docs) {
+        final review = ReviewModel.fromMap(
+          doc.data() as Map<String, dynamic>,
+          doc.id,
+        );
+        totalRating += review.rating;
+        count++;
+      }
+
+      final newAverage = totalRating / count;
+
+      // Mettre à jour l'agent
+      final agent = await getAgent(agentId);
+      if (agent != null) {
+        final updatedAgent = agent.copyWith(
+          averageRating: newAverage,
+          ratingCount: count,
+        );
+        await updateAgent(updatedAgent);
+      }
+    } catch (e) {
+      throw Exception(
+        'Erreur lors du recalcul de la note de l\'agent: ${e.toString()}',
+      );
     }
   }
 
@@ -459,9 +651,8 @@ class DatabaseService {
       final agentsCount = agentsSnapshot.size;
 
       // Nombre total d'utilisateurs (non-admin)
-      final usersSnapshot = await _usersCollection
-          .where('isAdmin', isEqualTo: false)
-          .get();
+      final usersSnapshot =
+          await _usersCollection.where('isAdmin', isEqualTo: false).get();
       final usersCount = usersSnapshot.size;
 
       // Nombre total de réservations
@@ -469,15 +660,18 @@ class DatabaseService {
       final reservationsCount = reservationsSnapshot.size;
 
       // Nombre de réservations par statut
-      final pendingSnapshot = await _reservationsCollection
-          .where('status', isEqualTo: ReservationModel.statusPending)
-          .get();
-      final approvedSnapshot = await _reservationsCollection
-          .where('status', isEqualTo: ReservationModel.statusApproved)
-          .get();
-      final completedSnapshot = await _reservationsCollection
-          .where('status', isEqualTo: ReservationModel.statusCompleted)
-          .get();
+      final pendingSnapshot =
+          await _reservationsCollection
+              .where('status', isEqualTo: ReservationModel.statusPending)
+              .get();
+      final approvedSnapshot =
+          await _reservationsCollection
+              .where('status', isEqualTo: ReservationModel.statusApproved)
+              .get();
+      final completedSnapshot =
+          await _reservationsCollection
+              .where('status', isEqualTo: ReservationModel.statusCompleted)
+              .get();
 
       return {
         'agentsCount': agentsCount,
@@ -488,7 +682,9 @@ class DatabaseService {
         'completedCount': completedSnapshot.size,
       };
     } catch (e) {
-      throw Exception('Erreur lors de la récupération des statistiques: ${e.toString()}');
+      throw Exception(
+        'Erreur lors de la récupération des statistiques: ${e.toString()}',
+      );
     }
   }
 }

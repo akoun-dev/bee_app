@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/agent_model.dart';
 import '../../models/review_model.dart';
 import '../../services/database_service.dart';
@@ -14,10 +13,7 @@ import '../../widgets/review_card.dart';
 class AgentDetailScreen extends StatefulWidget {
   final String agentId;
 
-  const AgentDetailScreen({
-    super.key,
-    required this.agentId,
-  });
+  const AgentDetailScreen({super.key, required this.agentId});
 
   @override
   State<AgentDetailScreen> createState() => _AgentDetailScreenState();
@@ -43,7 +39,10 @@ class _AgentDetailScreenState extends State<AgentDetailScreen> {
     });
 
     try {
-      final databaseService = Provider.of<DatabaseService>(context, listen: false);
+      final databaseService = Provider.of<DatabaseService>(
+        context,
+        listen: false,
+      );
       final agent = await databaseService.getAgent(widget.agentId);
 
       if (mounted) {
@@ -72,16 +71,17 @@ class _AgentDetailScreenState extends State<AgentDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _isLoading
-          ? const LoadingIndicator(message: 'Chargement du profil...')
-          : _errorMessage != null
+      body:
+          _isLoading
+              ? const LoadingIndicator(message: 'Chargement du profil...')
+              : _errorMessage != null
               ? ErrorMessage(
-                  message: 'Erreur: $_errorMessage',
-                  onRetry: _loadAgentDetails,
-                )
+                message: 'Erreur: $_errorMessage',
+                onRetry: _loadAgentDetails,
+              )
               : _agent == null
-                  ? const ErrorMessage(message: 'Agent introuvable')
-                  : _buildAgentDetails(),
+              ? const ErrorMessage(message: 'Agent introuvable')
+              : _buildAgentDetails(),
     );
   }
 
@@ -94,31 +94,8 @@ class _AgentDetailScreenState extends State<AgentDetailScreen> {
         SliverAppBar(
           expandedHeight: 300,
           pinned: true,
-          flexibleSpace: FlexibleSpaceBar(
-            background: _agent!.profileImageUrl != null
-                ? CachedNetworkImage(
-                    imageUrl: _agent!.profileImageUrl!,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      color: AppTheme.lightColor,
-                      child: const Icon(
-                        Icons.person,
-                        size: 100,
-                        color: AppTheme.mediumColor,
-                      ),
-                    ),
-                  )
-                : Container(
-                    color: AppTheme.lightColor,
-                    child: const Icon(
-                      Icons.person,
-                      size: 100,
-                      color: AppTheme.mediumColor,
-                    ),
-                  ),
+          flexibleSpace: const FlexibleSpaceBar(
+            background: AgentImage(fit: BoxFit.cover),
           ),
           actions: [
             // Bouton de partage
@@ -245,10 +222,7 @@ class _AgentDetailScreenState extends State<AgentDetailScreen> {
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.error_outline,
-                          color: AppTheme.errorColor,
-                        ),
+                        Icon(Icons.error_outline, color: AppTheme.errorColor),
                         SizedBox(width: 8),
                         Text(
                           'Agent non disponible actuellement',
@@ -266,10 +240,7 @@ class _AgentDetailScreenState extends State<AgentDetailScreen> {
                 // Section Informations
                 const Text(
                   AppConstants.agentInfo,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 _buildInfoCard(),
@@ -279,10 +250,7 @@ class _AgentDetailScreenState extends State<AgentDetailScreen> {
                 // Section Antécédents
                 const Text(
                   AppConstants.agentBackground,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 _buildBackgroundCard(),
@@ -292,10 +260,7 @@ class _AgentDetailScreenState extends State<AgentDetailScreen> {
                 // Section Avis et commentaires
                 const Text(
                   AppConstants.agentReviews,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
               ],
@@ -316,7 +281,8 @@ class _AgentDetailScreenState extends State<AgentDetailScreen> {
             if (snapshot.hasError) {
               return SliverToBoxAdapter(
                 child: ErrorMessage(
-                  message: 'Erreur lors du chargement des avis: ${snapshot.error}',
+                  message:
+                      'Erreur lors du chargement des avis: ${snapshot.error}',
                 ),
               );
             }
@@ -348,9 +314,7 @@ class _AgentDetailScreenState extends State<AgentDetailScreen> {
         ),
 
         // Espace en bas
-        const SliverToBoxAdapter(
-          child: SizedBox(height: 32),
-        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 32)),
       ],
     );
   }
@@ -384,10 +348,7 @@ class _AgentDetailScreenState extends State<AgentDetailScreen> {
         padding: const EdgeInsets.all(16),
         child: Text(
           _agent!.background,
-          style: const TextStyle(
-            fontSize: 16,
-            height: 1.5,
-          ),
+          style: const TextStyle(fontSize: 16, height: 1.5),
         ),
       ),
     );
@@ -401,18 +362,12 @@ class _AgentDetailScreenState extends State<AgentDetailScreen> {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              color: AppTheme.mediumColor,
-              fontSize: 14,
-            ),
+            style: const TextStyle(color: AppTheme.mediumColor, fontSize: 14),
           ),
           const Spacer(),
           Text(
             value,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 16,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
           ),
         ],
       ),

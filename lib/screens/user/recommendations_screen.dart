@@ -6,7 +6,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/agent_model.dart';
 import '../../services/recommendation_service.dart';
 import '../../utils/theme.dart';
-import '../../utils/routes.dart';
 import '../../widgets/agent_card.dart';
 import '../../widgets/common_widgets.dart';
 
@@ -211,13 +210,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 // Avatar
-                                Center(
-                                  child: UserAvatar(
-                                    imageUrl: agent.profileImageUrl,
-                                    name: agent.fullName,
-                                    size: 70,
-                                  ),
-                                ),
+                                const Center(child: AgentAvatar(size: 70)),
                                 const SizedBox(height: 12),
 
                                 // Nom

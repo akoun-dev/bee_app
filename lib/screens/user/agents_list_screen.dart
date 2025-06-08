@@ -2,7 +2,6 @@ import 'package:bee_app/utils/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/agent_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
@@ -30,7 +29,7 @@ class _AgentsListScreenState extends State<AgentsListScreen> {
   bool _isLoading = false;
   List<String> _availableProfessions = [];
 
-  Query _baseQuery = FirebaseFirestore.instance
+  final Query _baseQuery = FirebaseFirestore.instance
       .collection('agents')
       .orderBy('fullName')
       .limit(20);
@@ -549,32 +548,10 @@ class _AgentsListScreenState extends State<AgentsListScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Image de l'agent
-            SizedBox(
+            const SizedBox(
               width: 120,
               height: 140,
-              child:
-                  agent.profileImageUrl != null &&
-                          agent.profileImageUrl!.isNotEmpty
-                      ? CachedNetworkImage(
-                        imageUrl: agent.profileImageUrl!,
-                        fit: BoxFit.cover,
-                        placeholder:
-                            (context, url) => const Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                        errorWidget:
-                            (context, url, error) => Image.asset(
-                              'assets/images/guard.png',
-                              fit: BoxFit.cover,
-                            ),
-                      )
-                      : Container(
-                        color: Colors.grey[200],
-                        child: Image.asset(
-                          'assets/images/guard.png',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
+              child: AgentImage(width: 120, height: 140, fit: BoxFit.cover),
             ),
 
             // Informations de l'agent
@@ -732,32 +709,10 @@ class _AgentsListScreenState extends State<AgentsListScreen> {
             // Image de l'agent
             Stack(
               children: [
-                SizedBox(
+                const SizedBox(
                   height: 140,
                   width: double.infinity,
-                  child:
-                      agent.profileImageUrl != null
-                          ? CachedNetworkImage(
-                            imageUrl: agent.profileImageUrl!,
-                            fit: BoxFit.cover,
-                            placeholder:
-                                (context, url) => const Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                            errorWidget:
-                                (context, url, error) => Image.asset(
-                                  'assets/images/guard.png',
-                                  fit: BoxFit.cover,
-                                ),
-                          )
-                          : Container(
-                            color: Colors.grey[200],
-                            child: const Icon(
-                              Icons.person,
-                              size: 50,
-                              color: Colors.grey,
-                            ),
-                          ),
+                  child: AgentImage(height: 140, fit: BoxFit.cover),
                 ),
 
                 // Badge de disponibilité

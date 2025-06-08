@@ -65,7 +65,10 @@ class _RatingDialogState extends State<RatingDialog> {
 
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
-      final databaseService = Provider.of<DatabaseService>(context, listen: false);
+      final databaseService = Provider.of<DatabaseService>(
+        context,
+        listen: false,
+      );
 
       final currentUser = authService.currentUser;
       if (currentUser == null) {
@@ -99,7 +102,23 @@ class _RatingDialogState extends State<RatingDialog> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = e.toString();
+          // Améliorer le message d'erreur pour l'utilisateur
+          String errorMessage =
+              'Une erreur est survenue lors de la soumission de votre avis.';
+
+          if (e.toString().contains('permission-denied') ||
+              e.toString().contains('PERMISSION_DENIED')) {
+            errorMessage =
+                'Vous n\'avez pas les permissions nécessaires pour soumettre cet avis. Veuillez vous reconnecter.';
+          } else if (e.toString().contains('network')) {
+            errorMessage =
+                'Problème de connexion réseau. Vérifiez votre connexion internet.';
+          } else if (e.toString().contains('not-found')) {
+            errorMessage =
+                'Les données de la réservation ou de l\'agent sont introuvables.';
+          }
+
+          _errorMessage = errorMessage;
           _isSubmitting = false;
         });
       }
@@ -109,9 +128,7 @@ class _RatingDialogState extends State<RatingDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -122,10 +139,7 @@ class _RatingDialogState extends State<RatingDialog> {
               // Titre
               const Text(
                 'Évaluer votre expérience',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
 
@@ -133,11 +147,7 @@ class _RatingDialogState extends State<RatingDialog> {
               Row(
                 children: [
                   // Avatar de l'agent
-                  UserAvatar(
-                    imageUrl: widget.agent.profileImageUrl,
-                    name: widget.agent.fullName,
-                    size: 50,
-                  ),
+                  const AgentAvatar(size: 50),
                   const SizedBox(width: 12),
 
                   // Nom et profession de l'agent
@@ -177,10 +187,9 @@ class _RatingDialogState extends State<RatingDialog> {
                       allowHalfRating: true,
                       itemCount: 5,
                       itemPadding: const EdgeInsets.symmetric(horizontal: 4.0),
-                      itemBuilder: (context, _) => const Icon(
-                        Icons.star,
-                        color: Colors.amber,
-                      ),
+                      itemBuilder:
+                          (context, _) =>
+                              const Icon(Icons.star, color: Colors.amber),
                       onRatingUpdate: (rating) {
                         setState(() {
                           _rating = rating;
@@ -220,9 +229,10 @@ class _RatingDialogState extends State<RatingDialog> {
                 children: [
                   // Bouton d'annulation
                   TextButton(
-                    onPressed: _isSubmitting 
-                        ? null 
-                        : () => Navigator.of(context).pop(),
+                    onPressed:
+                        _isSubmitting
+                            ? null
+                            : () => Navigator.of(context).pop(),
                     child: const Text('Annuler'),
                   ),
                   const SizedBox(width: 8),
@@ -232,16 +242,17 @@ class _RatingDialogState extends State<RatingDialog> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primaryColor,
                     ),
-                    child: _isSubmitting
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text('Soumettre'),
+                    child:
+                        _isSubmitting
+                            ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                            : const Text('Soumettre'),
                   ),
                 ],
               ),

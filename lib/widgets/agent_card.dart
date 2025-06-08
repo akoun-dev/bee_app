@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import '../models/agent_model.dart';
 import '../utils/theme.dart';
@@ -34,33 +33,10 @@ class AgentCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Image de l'agent
-            SizedBox(
+            const SizedBox(
               height: 180,
               width: double.infinity,
-              child: agent.profileImageUrl != null
-                  ? CachedNetworkImage(
-                      imageUrl: agent.profileImageUrl!,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => const Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        color: AppTheme.lightColor,
-                        child: const Icon(
-                          Icons.person,
-                          size: 80,
-                          color: AppTheme.mediumColor,
-                        ),
-                      ),
-                    )
-                  : Container(
-                      color: AppTheme.lightColor,
-                      child: const Icon(
-                        Icons.person,
-                        size: 80,
-                        color: AppTheme.mediumColor,
-                      ),
-                    ),
+              child: AgentImage(height: 180, fit: BoxFit.cover),
             ),
 
             Padding(
@@ -171,7 +147,8 @@ class AgentCard extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: onTap ?? () => context.go('/agent/${agent.id}'),
+                      onPressed:
+                          onTap ?? () => context.go('/agent/${agent.id}'),
                       child: const Text('Voir le profil'),
                     ),
                   ),
@@ -189,9 +166,7 @@ class AgentCard extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: InkWell(
         onTap: onTap ?? () => context.go('/agent/${agent.id}'),
         child: Column(
@@ -199,37 +174,10 @@ class AgentCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             // Image de l'agent (encore plus petite)
-            SizedBox(
+            const SizedBox(
               height: 100,
               width: double.infinity,
-              child: agent.profileImageUrl != null
-                  ? CachedNetworkImage(
-                      imageUrl: agent.profileImageUrl!,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => const Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        color: AppTheme.lightColor,
-                        child: const Icon(
-                          Icons.person,
-                          size: 40,
-                          color: AppTheme.mediumColor,
-                        ),
-                      ),
-                    )
-                  : Container(
-                      color: AppTheme.lightColor,
-                      child: const Icon(
-                        Icons.person,
-                        size: 40,
-                        color: AppTheme.mediumColor,
-                      ),
-                    ),
+              child: AgentImage(height: 100, fit: BoxFit.cover),
             ),
 
             // Informations de l'agent
@@ -280,9 +228,13 @@ class AgentCard extends StatelessWidget {
                     width: double.infinity,
                     height: 24,
                     child: ElevatedButton(
-                      onPressed: onTap ?? () => context.go('/agent/${agent.id}'),
+                      onPressed:
+                          onTap ?? () => context.go('/agent/${agent.id}'),
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 0,
+                        ),
                         textStyle: const TextStyle(fontSize: 10),
                         minimumSize: const Size(0, 24),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -303,19 +255,12 @@ class AgentCard extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          size: 16,
-          color: AppTheme.mediumColor,
-        ),
+        Icon(icon, size: 16, color: AppTheme.mediumColor),
         const SizedBox(width: 4),
         Flexible(
           child: Text(
             text,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppTheme.mediumColor,
-            ),
+            style: const TextStyle(fontSize: 12, color: AppTheme.mediumColor),
             overflow: TextOverflow.ellipsis,
             maxLines: 1,
           ),
