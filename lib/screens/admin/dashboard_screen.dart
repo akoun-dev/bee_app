@@ -35,7 +35,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final databaseService = Provider.of<DatabaseService>(context, listen: false);
+      final databaseService = Provider.of<DatabaseService>(
+        context,
+        listen: false,
+      );
       final stats = await databaseService.getStatistics();
 
       // Simuler des données supplémentaires pour les graphiques
@@ -55,7 +58,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       // Gérer l'erreur
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors du chargement des statistiques: ${e.toString()}')),
+          SnackBar(
+            content: Text(
+              'Erreur lors du chargement des statistiques: ${e.toString()}',
+            ),
+          ),
         );
       }
       setState(() => _isLoading = false);
@@ -106,17 +113,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       // Valeurs aléatoires pour la démonstration
       final revenue = 5000 + (adjustedMonth * 1000) + (adjustedMonth % 3) * 500;
 
-      data.add({
-        'month': monthName,
-        'revenue': revenue,
-      });
+      data.add({'month': monthName, 'revenue': revenue});
     }
 
     return data;
   }
 
   // Récupérer les meilleurs agents
-  Future<List<Map<String, dynamic>>> _getTopAgents(DatabaseService databaseService) async {
+  Future<List<Map<String, dynamic>>> _getTopAgents(
+    DatabaseService databaseService,
+  ) async {
     try {
       final agents = await databaseService.getAgents().first;
 
@@ -124,11 +130,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
       agents.sort((a, b) => b.averageRating.compareTo(a.averageRating));
 
       // Prendre les 5 premiers
-      final topAgents = agents.take(5).map((agent) => {
-        'agent': agent,
-        'reservations': 10 + (agent.id.hashCode % 20), // Simulé pour la démonstration
-        'revenue': 2000 + (agent.id.hashCode % 5) * 1000, // Simulé pour la démonstration
-      }).toList();
+      final topAgents =
+          agents
+              .take(5)
+              .map(
+                (agent) => {
+                  'agent': agent,
+                  'reservations':
+                      10 +
+                      (agent.id.hashCode % 20), // Simulé pour la démonstration
+                  'revenue':
+                      2000 +
+                      (agent.id.hashCode % 5) *
+                          1000, // Simulé pour la démonstration
+                },
+              )
+              .toList();
 
       return topAgents;
     } catch (e) {
@@ -167,33 +184,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       drawer: const AdminDrawer(),
-      body: _isLoading
-        ? const LoadingIndicator(message: 'Chargement des statistiques...')
-        : SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Cartes de statistiques principales
-                _buildStatisticsCards(),
+      body:
+          _isLoading
+              ? const LoadingIndicator(
+                message: 'Chargement des statistiques...',
+              )
+              : SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Cartes de statistiques principales
+                    _buildStatisticsCards(),
 
-                const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                // Graphique des réservations par mois
-                _buildReservationsChart(),
+                    // Graphique des réservations par mois
+                    _buildReservationsChart(),
 
-                const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                // Graphique des revenus
-                _buildRevenueChart(),
+                    // Graphique des revenus
+                    _buildRevenueChart(),
 
-                const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                // Top agents
-                _buildTopAgentsSection(),
-              ],
-            ),
-          ),
+                    // Top agents
+                    _buildTopAgentsSection(),
+                  ],
+                ),
+              ),
     );
   }
 
@@ -260,10 +280,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(width: 8),
                 Text(
                   title,
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: TextStyle(color: color, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
@@ -284,7 +301,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // Construire le graphique des réservations
   Widget _buildReservationsChart() {
-    final data = _statistics['monthlyReservations'] as List<Map<String, dynamic>>? ?? [];
+    final data =
+        _statistics['monthlyReservations'] as List<Map<String, dynamic>>? ?? [];
 
     if (data.isEmpty) {
       return const EmptyMessage(
@@ -303,10 +321,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             const Text(
               'Réservations par mois',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -314,8 +329,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: BarChart(
                 BarChartData(
                   alignment: BarChartAlignment.spaceAround,
-                  maxY: data.fold(0, (max, item) =>
-                    item['total'] > max ? item['total'] : max) * 1.2,
+                  maxY:
+                      data.fold(
+                        0,
+                        (max, item) =>
+                            item['total'] > max ? item['total'] : max,
+                      ) *
+                      1.2,
                   barTouchData: BarTouchData(enabled: false),
                   titlesData: FlTitlesData(
                     show: true,
@@ -323,7 +343,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       sideTitles: SideTitles(
                         showTitles: true,
                         getTitlesWidget: (value, meta) {
-                          if (value < 0 || value >= data.length) return const Text('');
+                          if (value < 0 || value >= data.length) {
+                            return const Text('');
+                          }
                           return Text(
                             data[value.toInt()]['month'],
                             style: const TextStyle(fontSize: 12),
@@ -344,8 +366,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         reservedSize: 30,
                       ),
                     ),
-                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
                   ),
                   gridData: const FlGridData(show: false),
                   borderData: FlBorderData(show: false),
@@ -377,7 +403,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // Construire le graphique des revenus
   Widget _buildRevenueChart() {
-    final data = _statistics['monthlyRevenue'] as List<Map<String, dynamic>>? ?? [];
+    final data =
+        _statistics['monthlyRevenue'] as List<Map<String, dynamic>>? ?? [];
 
     if (data.isEmpty) {
       return const EmptyMessage(
@@ -396,10 +423,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             const Text(
               'Revenus par mois (Fcfa)',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -414,7 +438,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       sideTitles: SideTitles(
                         showTitles: true,
                         getTitlesWidget: (value, meta) {
-                          if (value < 0 || value >= data.length) return const Text('');
+                          if (value < 0 || value >= data.length) {
+                            return const Text('');
+                          }
                           return Text(
                             data[value.toInt()]['month'],
                             style: const TextStyle(fontSize: 12),
@@ -435,14 +461,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         reservedSize: 40,
                       ),
                     ),
-                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
                   ),
                   borderData: FlBorderData(show: true),
                   lineBarsData: [
                     LineChartBarData(
                       spots: List.generate(data.length, (index) {
-                        return FlSpot(index.toDouble(), data[index]['revenue'].toDouble());
+                        return FlSpot(
+                          index.toDouble(),
+                          data[index]['revenue'].toDouble(),
+                        );
                       }),
                       isCurved: true,
                       color: AppTheme.accentColor,
@@ -467,7 +500,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // Construire la section des meilleurs agents
   Widget _buildTopAgentsSection() {
-    final topAgents = _statistics['topAgents'] as List<Map<String, dynamic>>? ?? [];
+    final topAgents =
+        _statistics['topAgents'] as List<Map<String, dynamic>>? ?? [];
 
     if (topAgents.isEmpty) {
       return const EmptyMessage(
@@ -486,10 +520,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             const Text(
               'Top 5 des agents',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             ...topAgents.map((item) {

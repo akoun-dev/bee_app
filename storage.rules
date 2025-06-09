@@ -83,6 +83,32 @@ service firebase.storage {
       allow read, write: if isAdmin();
     }
 
+    // Exports de données (PDF, Excel)
+    match /exports/{exportId} {
+      // Seuls les admins peuvent lire/écrire les exports
+      allow read, write: if isAdmin() && isFileSizeUnder(50); // Max 50MB pour les exports
+    }
+
+    // Sauvegardes de données
+    match /backups/{backupId} {
+      // Seuls les admins peuvent gérer les sauvegardes
+      allow read, write: if isAdmin() && isFileSizeUnder(100); // Max 100MB pour les sauvegardes
+    }
+
+    // Logs d'audit exportés
+    match /audit_exports/{exportId} {
+      // Seuls les admins peuvent gérer les exports d'audit
+      allow read, write: if isAdmin() && isFileSizeUnder(20); // Max 20MB pour les logs
+    }
+
+    // Images par défaut du système
+    match /system/default_images/{imageId} {
+      // Tout le monde peut lire les images par défaut
+      allow read: if true;
+      // Seuls les admins peuvent modifier les images par défaut
+      allow write: if isAdmin() && isImageType() && isFileSizeUnder(5);
+    }
+
     // Règles par défaut - refuser tout accès non spécifié
     match /{allPaths=**} {
       allow read, write: if false;

@@ -11,10 +11,11 @@ import '../widgets/common_widgets.dart';
 class GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 0.5
-      ..style = PaintingStyle.stroke;
+    final paint =
+        Paint()
+          ..color = Colors.white
+          ..strokeWidth = 0.5
+          ..style = PaintingStyle.stroke;
 
     // Dessiner des lignes horizontales
     final horizontalLineCount = 10;
@@ -88,23 +89,24 @@ class _AdminDrawerState extends State<AdminDrawer> {
     // Confirmer la déconnexion
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirmer la déconnexion'),
-        content: const Text('Êtes-vous sûr de vouloir vous déconnecter ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Confirmer la déconnexion'),
+            content: const Text('Êtes-vous sûr de vouloir vous déconnecter ?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Annuler'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.errorColor,
+                ),
+                child: const Text('Déconnexion'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.errorColor,
-            ),
-            child: const Text('Déconnexion'),
-          ),
-        ],
-      ),
     );
 
     // Si confirmé, déconnecter l'utilisateur
@@ -120,16 +122,17 @@ class _AdminDrawerState extends State<AdminDrawer> {
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (dialogContext) => const AlertDialog(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Déconnexion en cours...'),
-              ],
-            ),
-          ),
+          builder:
+              (dialogContext) => const AlertDialog(
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Déconnexion en cours...'),
+                  ],
+                ),
+              ),
         );
 
         // Déconnecter l'utilisateur
@@ -208,9 +211,7 @@ class _AdminDrawerState extends State<AdminDrawer> {
                 Positioned.fill(
                   child: Opacity(
                     opacity: 0.1,
-                    child: CustomPaint(
-                      painter: GridPainter(),
-                    ),
+                    child: CustomPaint(painter: GridPainter()),
                   ),
                 ),
 
@@ -223,48 +224,51 @@ class _AdminDrawerState extends State<AdminDrawer> {
                       // Avatar et informations utilisateur
                       _isLoading
                           ? const Center(
-                              child: CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
                               ),
-                            )
-                          : Row(
-                              children: [
-                                // Avatar
-                                UserAvatar(
-                                  imageUrl: _currentUser?.profileImageUrl,
-                                  name: _currentUser?.fullName,
-                                  size: 60,
-                                ),
-                                const SizedBox(width: 12),
-
-                                // Informations utilisateur
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        _currentUser?.fullName ?? 'Administrateur',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        _currentUser?.email ?? '',
-                                        style: const TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 14,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
                             ),
+                          )
+                          : Row(
+                            children: [
+                              // Avatar
+                              UserAvatar(
+                                imageUrl: _currentUser?.profileImageUrl,
+                                name: _currentUser?.fullName,
+                                size: 60,
+                              ),
+                              const SizedBox(width: 12),
+
+                              // Informations utilisateur
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _currentUser?.fullName ??
+                                          'Administrateur',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _currentUser?.email ?? '',
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 14,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
 
                       const SizedBox(height: 20),
 
@@ -292,10 +296,7 @@ class _AdminDrawerState extends State<AdminDrawer> {
 
                       const Text(
                         'Panneau de contrôle',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.white70, fontSize: 14),
                       ),
                     ],
                   ),
@@ -306,10 +307,7 @@ class _AdminDrawerState extends State<AdminDrawer> {
                   top: 10,
                   right: 10,
                   child: IconButton(
-                    icon: const Icon(
-                      Icons.logout,
-                      color: Colors.white,
-                    ),
+                    icon: const Icon(Icons.logout, color: Colors.white),
                     tooltip: 'Déconnexion',
                     onPressed: () => _signOut(context),
                   ),
@@ -377,6 +375,67 @@ class _AdminDrawerState extends State<AdminDrawer> {
                   icon: Icons.description,
                   title: 'Rapports',
                   route: '/admin/reports',
+                ),
+
+                // Divider pour séparer les sections
+                const Divider(),
+
+                // Section Sécurité et Monitoring
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Text(
+                    'Sécurité & Monitoring',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ),
+
+                // Logs d'audit
+                _buildNavItem(
+                  context: context,
+                  icon: Icons.history,
+                  title: 'Logs d\'audit',
+                  route: '/admin/audit-logs',
+                ),
+
+                // Gestion des permissions
+                _buildNavItem(
+                  context: context,
+                  icon: Icons.admin_panel_settings,
+                  title: 'Permissions',
+                  route: '/admin/permissions',
+                ),
+
+                // Monitoring système
+                _buildNavItem(
+                  context: context,
+                  icon: Icons.monitor_heart,
+                  title: 'Monitoring',
+                  route: '/admin/monitoring',
+                ),
+
+                const Divider(),
+
+                // Section Configuration
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Text(
+                    'Configuration',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[600],
+                    ),
+                  ),
                 ),
 
                 // Paramètres

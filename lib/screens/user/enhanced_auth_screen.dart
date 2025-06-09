@@ -15,7 +15,8 @@ class EnhancedAuthScreen extends StatefulWidget {
   State<EnhancedAuthScreen> createState() => _EnhancedAuthScreenState();
 }
 
-class _EnhancedAuthScreenState extends State<EnhancedAuthScreen> with SingleTickerProviderStateMixin {
+class _EnhancedAuthScreenState extends State<EnhancedAuthScreen>
+    with SingleTickerProviderStateMixin {
   // Contrôleurs pour les champs de texte
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -47,20 +48,14 @@ class _EnhancedAuthScreenState extends State<EnhancedAuthScreen> with SingleTick
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeIn,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
     );
 
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.1),
       end: Offset.zero,
     ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
 
     // Démarrer l'animation
@@ -150,7 +145,8 @@ class _EnhancedAuthScreenState extends State<EnhancedAuthScreen> with SingleTick
                 await authService.signIn(
                   email: email,
                   password: _passwordController.text,
-                  requireEmailVerification: false, // Ne pas exiger la vérification d'email
+                  requireEmailVerification:
+                      false, // Ne pas exiger la vérification d'email
                 );
 
                 // Envoyer un email de vérification
@@ -186,18 +182,24 @@ class _EnhancedAuthScreenState extends State<EnhancedAuthScreen> with SingleTick
         if (mounted) {
           // Afficher un message de succès
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(AppConstants.successRegistration),
+            SnackBar(
+              content: const Text(
+                'Compte créé avec succès ! Un email de vérification a été envoyé. Veuillez vous connecter.',
+              ),
               backgroundColor: AppTheme.accentColor,
+              duration: const Duration(seconds: 5),
             ),
           );
 
-          // Redirection manuelle vers le tableau de bord
-          // Utiliser Future.microtask pour éviter les problèmes de navigation pendant le build
-          Future.microtask(() {
-            if (mounted) {
-              context.go('/dashboard');
-            }
+          // Basculer vers le mode connexion au lieu de rediriger
+          setState(() {
+            _isLogin = true;
+            _errorMessage = null;
+            // Garder l'email pour faciliter la connexion
+            // Vider les autres champs
+            _passwordController.clear();
+            _fullNameController.clear();
+            _phoneController.clear();
           });
         }
       }
@@ -288,7 +290,10 @@ class _EnhancedAuthScreenState extends State<EnhancedAuthScreen> with SingleTick
 
                               // Bouton principal
                               PrimaryButton(
-                                text: _isLogin ? AppConstants.loginButton : AppConstants.registerButton,
+                                text:
+                                    _isLogin
+                                        ? AppConstants.loginButton
+                                        : AppConstants.registerButton,
                                 onPressed: _submitForm,
                                 isLoading: _isLoading,
                               ),
@@ -331,10 +336,7 @@ class _EnhancedAuthScreenState extends State<EnhancedAuthScreen> with SingleTick
               ),
             ],
           ),
-          child: Image.asset(
-            'assets/images/bee-logo.png',
-            fit: BoxFit.contain,
-          ),
+          child: Image.asset('assets/images/bee-logo.png', fit: BoxFit.contain),
         ),
         const SizedBox(height: 16),
 
@@ -491,10 +493,7 @@ class _EnhancedAuthScreenState extends State<EnhancedAuthScreen> with SingleTick
       obscureText: obscureText,
       keyboardType: keyboardType,
       validator: validator,
-      style: const TextStyle(
-        color: AppTheme.secondaryColor,
-        fontSize: 16,
-      ),
+      style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 16),
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: AppTheme.primaryColor),
@@ -517,7 +516,10 @@ class _EnhancedAuthScreenState extends State<EnhancedAuthScreen> with SingleTick
         ),
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
       ),
     );
   }

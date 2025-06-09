@@ -32,6 +32,10 @@ import '../screens/admin/app_settings_screen.dart';
 import '../screens/admin/reservation_detail_screen.dart';
 import '../screens/admin/users_management_screen.dart';
 import '../screens/admin/admin_profile_screen.dart';
+// Nouveaux écrans admin
+import '../screens/admin/audit_logs_screen.dart';
+import '../screens/admin/permissions_management_screen.dart';
+import '../screens/admin/system_monitoring_screen.dart';
 
 // Configuration des routes de l'application
 class AppRouter {
@@ -57,11 +61,12 @@ class AppRouter {
       ),
       GoRoute(
         path: '/change-password',
-        builder: (context, state) => const PasswordChangeScreen().withUserNavigation(
-          currentIndex: 3, // Index du profil
-          showBackButton: true,
-          title: 'Modifier le mot de passe',
-        ),
+        builder:
+            (context, state) => const PasswordChangeScreen().withUserNavigation(
+              currentIndex: 3, // Index du profil
+              showBackButton: true,
+              title: 'Modifier le mot de passe',
+            ),
       ),
       GoRoute(
         path: '/verify-email',
@@ -72,17 +77,19 @@ class AppRouter {
       ),
       GoRoute(
         path: '/dashboard',
-        builder: (context, state) => const UserDashboardScreen().withUserNavigation(
-          currentIndex: 0,
-          title: 'Tableau de bord',
-        ),
+        builder:
+            (context, state) => const UserDashboardScreen().withUserNavigation(
+              currentIndex: 0,
+              title: 'Tableau de bord',
+            ),
       ),
       GoRoute(
         path: '/agents',
-        builder: (context, state) => const AgentsListScreen().withUserNavigation(
-          currentIndex: 1,
-          // Ne pas définir de titre ici car l'écran a déjà un AppBar avec un titre
-        ),
+        builder:
+            (context, state) => const AgentsListScreen().withUserNavigation(
+              currentIndex: 1,
+              // Ne pas définir de titre ici car l'écran a déjà un AppBar avec un titre
+            ),
       ),
       GoRoute(
         path: '/agent/:id',
@@ -108,39 +115,51 @@ class AppRouter {
       ),
       GoRoute(
         path: '/history',
-        builder: (context, state) => const ReservationHistoryScreen().withUserNavigation(
-          currentIndex: 2,
-          // Ne pas définir de titre ici car l'écran a déjà un AppBar avec un titre
-        ),
+        builder:
+            (
+              context,
+              state,
+            ) => const ReservationHistoryScreen().withUserNavigation(
+              currentIndex: 2,
+              // Ne pas définir de titre ici car l'écran a déjà un AppBar avec un titre
+            ),
       ),
       GoRoute(
         path: '/profile',
-        builder: (context, state) => const UserProfileScreen().withUserNavigation(
-          currentIndex: 3,
-          // Ne pas définir de titre ici car l'écran a déjà un AppBar avec un titre
-        ),
+        builder:
+            (context, state) => const UserProfileScreen().withUserNavigation(
+              currentIndex: 3,
+              // Ne pas définir de titre ici car l'écran a déjà un AppBar avec un titre
+            ),
       ),
       GoRoute(
         path: '/recommendations',
-        builder: (context, state) => const RecommendationsScreen().withUserNavigation(
-          currentIndex: 0,
-          showBackButton: true,
-          title: 'Recommandations',
-        ),
+        builder:
+            (context, state) =>
+                const RecommendationsScreen().withUserNavigation(
+                  currentIndex: 0,
+                  showBackButton: true,
+                  title: 'Recommandations',
+                ),
       ),
       GoRoute(
         path: '/settings',
-        builder: (context, state) => const UserSettingsScreen().withUserNavigation(
-          currentIndex: 4, // Mettre à jour l'index pour correspondre à l'onglet Paramètres
-          showBackButton: false, // Pas besoin de bouton retour pour un onglet principal
-          // Ne pas définir de titre ici car l'écran a déjà un AppBar avec un titre
-        ),
+        builder:
+            (context, state) => const UserSettingsScreen().withUserNavigation(
+              currentIndex:
+                  4, // Mettre à jour l'index pour correspondre à l'onglet Paramètres
+              showBackButton:
+                  false, // Pas besoin de bouton retour pour un onglet principal
+              // Ne pas définir de titre ici car l'écran a déjà un AppBar avec un titre
+            ),
       ),
       GoRoute(
         path: '/review/:reservationId',
         builder: (context, state) {
           final reservationId = state.pathParameters['reservationId']!;
-          return ReviewSubmissionScreen(reservationId: reservationId).withUserNavigation(
+          return ReviewSubmissionScreen(
+            reservationId: reservationId,
+          ).withUserNavigation(
             currentIndex: 2, // Correspond à l'onglet Historique
             showBackButton: true,
             title: 'Évaluer votre expérience',
@@ -149,10 +168,7 @@ class AppRouter {
       ),
 
       // Routes administrateur
-      GoRoute(
-        path: '/admin',
-        redirect: (_, __) => '/admin/dashboard',
-      ),
+      GoRoute(path: '/admin', redirect: (_, __) => '/admin/dashboard'),
       GoRoute(
         path: '/admin/dashboard',
         builder: (context, state) => const DashboardScreen(),
@@ -196,34 +212,51 @@ class AppRouter {
         path: '/admin/profile',
         builder: (context, state) => const AdminProfileScreen(),
       ),
+      // Nouvelles routes admin
+      GoRoute(
+        path: '/admin/audit-logs',
+        builder: (context, state) => const AuditLogsScreen(),
+      ),
+      GoRoute(
+        path: '/admin/permissions',
+        builder: (context, state) => const PermissionsManagementScreen(),
+      ),
+      GoRoute(
+        path: '/admin/monitoring',
+        builder: (context, state) => const SystemMonitoringScreen(),
+      ),
     ],
-    errorBuilder: (context, state) => Scaffold(
-      appBar: AppBar(
-        title: const Text('Page non trouvée'),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Oups! Cette page n\'existe pas.',
-              style: TextStyle(fontSize: 18),
+    errorBuilder:
+        (context, state) => Scaffold(
+          appBar: AppBar(title: const Text('Page non trouvée')),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'Oups! Cette page n\'existe pas.',
+                  style: TextStyle(fontSize: 18),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () => context.go('/agents'),
+                  child: const Text('Retour à l\'accueil'),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => context.go('/agents'),
-              child: const Text('Retour à l\'accueil'),
-            ),
-          ],
+          ),
         ),
-      ),
-    ),
     redirect: (BuildContext context, GoRouterState state) async {
       // Récupérer l'utilisateur actuel
       final user = Provider.of<User?>(context, listen: false);
 
       // Routes publiques (accessibles sans connexion)
-      final publicRoutes = ['/auth', '/splash', '/reset-password', '/verify-email'];
+      final publicRoutes = [
+        '/auth',
+        '/splash',
+        '/reset-password',
+        '/verify-email',
+      ];
 
       // Permettre l'accès à l'écran de démarrage sans redirection
       if (state.matchedLocation == '/splash') {

@@ -99,6 +99,10 @@ class AuthService {
       // Mettre à jour le nom d'utilisateur
       await userCredential.user?.updateDisplayName(fullName);
 
+      // Déconnecter l'utilisateur après l'inscription
+      // pour qu'il doive se connecter manuellement
+      await _auth.signOut();
+
       return user;
     } catch (e) {
       // Capturer spécifiquement les erreurs d'authentification Firebase

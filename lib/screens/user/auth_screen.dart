@@ -89,12 +89,25 @@ class _AuthScreenState extends State<AuthScreen> {
         if (mounted) {
           // Afficher un message de succès
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(AppConstants.successRegistration),
+            SnackBar(
+              content: const Text(
+                'Compte créé avec succès ! Un email de vérification a été envoyé. Veuillez vous connecter.',
+              ),
               backgroundColor: AppTheme.accentColor,
+              duration: const Duration(seconds: 5),
             ),
           );
-          // La redirection sera gérée automatiquement par le router
+
+          // Basculer vers le mode connexion
+          setState(() {
+            _isLogin = true;
+            _errorMessage = null;
+            // Garder l'email pour faciliter la connexion
+            // Vider les autres champs
+            _passwordController.clear();
+            _fullNameController.clear();
+            _phoneController.clear();
+          });
         }
       }
     } catch (e) {
@@ -115,7 +128,8 @@ class _AuthScreenState extends State<AuthScreen> {
     // Vérifier que l'email est valide
     if (_emailController.text.isEmpty || !_emailController.text.contains('@')) {
       setState(() {
-        _errorMessage = 'Veuillez entrer une adresse email valide pour réinitialiser votre mot de passe.';
+        _errorMessage =
+            'Veuillez entrer une adresse email valide pour réinitialiser votre mot de passe.';
       });
       return;
     }
@@ -132,7 +146,9 @@ class _AuthScreenState extends State<AuthScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Un email de réinitialisation a été envoyé à votre adresse email.'),
+            content: Text(
+              'Un email de réinitialisation a été envoyé à votre adresse email.',
+            ),
             backgroundColor: AppTheme.accentColor,
           ),
         );
@@ -178,7 +194,9 @@ class _AuthScreenState extends State<AuthScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _isLogin ? AppConstants.loginTitle : AppConstants.registerTitle,
+                    _isLogin
+                        ? AppConstants.loginTitle
+                        : AppConstants.registerTitle,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
@@ -241,7 +259,9 @@ class _AuthScreenState extends State<AuthScreen> {
                     obscureText: _obscurePassword,
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: _togglePasswordVisibility,
                     ),
@@ -269,7 +289,10 @@ class _AuthScreenState extends State<AuthScreen> {
 
                   // Bouton de connexion/inscription
                   PrimaryButton(
-                    text: _isLogin ? AppConstants.loginButton : AppConstants.registerButton,
+                    text:
+                        _isLogin
+                            ? AppConstants.loginButton
+                            : AppConstants.registerButton,
                     onPressed: _submitForm,
                     isLoading: _isLoading,
                   ),
@@ -279,7 +302,9 @@ class _AuthScreenState extends State<AuthScreen> {
                   TextButton(
                     onPressed: _toggleAuthMode,
                     child: Text(
-                      _isLogin ? AppConstants.noAccount : AppConstants.alreadyAccount,
+                      _isLogin
+                          ? AppConstants.noAccount
+                          : AppConstants.alreadyAccount,
                     ),
                   ),
 

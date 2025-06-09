@@ -1,14 +1,13 @@
 {
   "project_info": {
-    "project_number": "475419868598",
-    "firebase_url": "https://bee-app-ba993-default-rtdb.firebaseio.com",
-    "project_id": "bee-app-ba993",
-    "storage_bucket": "bee-app-ba993.firebasestorage.app"
+    "project_number": "689422214219",
+    "project_id": "zibene-f72fa",
+    "storage_bucket": "zibene-f72fa.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:475419868598:android:24dcb802c214d076535517",
+        "mobilesdk_app_id": "1:689422214219:android:3e993f19ffe4cfab7419ce",
         "android_client_info": {
           "package_name": "com.bee.app"
         }
@@ -16,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyB_hnmDfu1iQH_sCPEEOea5Z_5Dn97aEJU"
+          "current_key": "AIzaSyBdKY2fXvICoaqlzzi2OrnOUm4bzfEVMIY"
         }
       ],
       "services": {

@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import 'lib/models/agent_model.dart';
 import 'lib/services/database_service.dart';
-import 'lib/services/auth_service.dart';
 import 'lib/widgets/common_widgets.dart';
 
 // Script de test pour vérifier la mise à jour des profils d'agents

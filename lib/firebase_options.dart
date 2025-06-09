@@ -17,19 +17,13 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for ios - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.macOS:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for macos - '
@@ -52,12 +46,29 @@ class DefaultFirebaseOptions {
     }
   }
 
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyBUkzIUUnJvx1CCOkR6YGkhenQMP4Gwkd0',
+    appId: '1:689422214219:web:cad2d93c43b60fdd7419ce',
+    messagingSenderId: '689422214219',
+    projectId: 'zibene-f72fa',
+    authDomain: 'zibene-f72fa.firebaseapp.com',
+    storageBucket: 'zibene-f72fa.firebasestorage.app',
+  );
+
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyB_hnmDfu1iQH_sCPEEOea5Z_5Dn97aEJU',
-    appId: '1:475419868598:android:24dcb802c214d076535517',
-    messagingSenderId: '475419868598',
-    projectId: 'bee-app-ba993',
-    databaseURL: 'https://bee-app-ba993-default-rtdb.firebaseio.com',
-    storageBucket: 'bee-app-ba993.firebasestorage.app',
+    apiKey: 'AIzaSyBdKY2fXvICoaqlzzi2OrnOUm4bzfEVMIY',
+    appId: '1:689422214219:android:3e993f19ffe4cfab7419ce',
+    messagingSenderId: '689422214219',
+    projectId: 'zibene-f72fa',
+    storageBucket: 'zibene-f72fa.firebasestorage.app',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyDEYnl4VQ5SWNOyafJ7LmIcTt3BAj8sh2A',
+    appId: '1:689422214219:ios:f35114b9478547137419ce',
+    messagingSenderId: '689422214219',
+    projectId: 'zibene-f72fa',
+    storageBucket: 'zibene-f72fa.firebasestorage.app',
+    iosBundleId: 'com.example.beeApp',
   );
 }

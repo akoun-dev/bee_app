@@ -11,6 +11,7 @@ class UserModel {
   final String? profileImageUrl;
   final DateTime createdAt;
   final bool isAdmin;
+  final List<String>? permissions;
 
   UserModel({
     required this.uid,
@@ -20,7 +21,11 @@ class UserModel {
     this.profileImageUrl,
     required this.createdAt,
     this.isAdmin = false,
+    this.permissions,
   });
+
+  // Getter pour l'ID (alias pour uid)
+  String get id => uid;
 
   // Conversion depuis Firestore
   factory UserModel.fromMap(Map<String, dynamic> map, String id) {
@@ -32,6 +37,10 @@ class UserModel {
       profileImageUrl: map['profileImageUrl'],
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       isAdmin: map['isAdmin'] ?? false,
+      permissions:
+          map['permissions'] != null
+              ? List<String>.from(map['permissions'])
+              : null,
     );
   }
 
@@ -44,6 +53,7 @@ class UserModel {
       'profileImageUrl': profileImageUrl,
       'createdAt': Timestamp.fromDate(createdAt),
       'isAdmin': isAdmin,
+      'permissions': permissions,
     };
   }
 
@@ -52,6 +62,8 @@ class UserModel {
     String? fullName,
     String? phoneNumber,
     String? profileImageUrl,
+    bool? isAdmin,
+    List<String>? permissions,
   }) {
     return UserModel(
       uid: uid,
@@ -60,7 +72,8 @@ class UserModel {
       phoneNumber: phoneNumber ?? this.phoneNumber,
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
       createdAt: createdAt,
-      isAdmin: isAdmin,
+      isAdmin: isAdmin ?? this.isAdmin,
+      permissions: permissions ?? this.permissions,
     );
   }
 }

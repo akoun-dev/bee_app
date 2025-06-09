@@ -11,10 +11,12 @@ class ReservationModel {
   final DateTime endDate; // Date de fin de mission
   final String location; // Lieu de la mission
   final String description; // Description de la mission
-  final String status; // 'pending', 'approved', 'rejected', 'completed', 'cancelled'
+  final String
+  status; // 'pending', 'approved', 'rejected', 'completed', 'cancelled'
   final DateTime createdAt;
   final double? rating; // Note donnée par l'utilisateur après la mission
   final String? comment; // Commentaire laissé par l'utilisateur
+  final double? totalPrice; // Prix total de la mission
 
   // Statuts possibles pour une réservation
   static const String statusPending = 'pending';
@@ -35,6 +37,7 @@ class ReservationModel {
     required this.createdAt,
     this.rating,
     this.comment,
+    this.totalPrice,
   });
 
   // Conversion depuis Firestore
@@ -51,6 +54,7 @@ class ReservationModel {
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       rating: map['rating']?.toDouble(),
       comment: map['comment'],
+      totalPrice: map['totalPrice']?.toDouble(),
     );
   }
 
@@ -67,6 +71,7 @@ class ReservationModel {
       'createdAt': Timestamp.fromDate(createdAt),
       'rating': rating,
       'comment': comment,
+      'totalPrice': totalPrice,
     };
   }
 
@@ -99,11 +104,7 @@ class ReservationModel {
 
   // Méthode pour ajouter une évaluation
   ReservationModel addRating(double rating, String comment) {
-    return copyWith(
-      rating: rating,
-      comment: comment,
-      status: statusCompleted,
-    );
+    return copyWith(rating: rating, comment: comment, status: statusCompleted);
   }
 
   // Méthode pour approuver une réservation

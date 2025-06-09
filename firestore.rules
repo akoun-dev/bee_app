@@ -90,6 +90,92 @@ service cloud.firestore {
       allow read, write: if isOwner(userId) || isAdmin();
     }
 
+    // Nouvelles règles pour les fonctionnalités admin avancées
+
+    // Règles pour les logs d'audit
+    match /audit_logs/{logId} {
+      // Seuls les admins peuvent lire les logs d'audit
+      allow read: if isAdmin();
+      // Seul le système peut créer des logs (via Cloud Functions ou SDK Admin)
+      allow create: if isAdmin();
+      // Interdire la modification/suppression des logs pour l'intégrité
+      allow update, delete: if false;
+    }
+
+    // Règles pour les paramètres de l'application
+    match /app_settings/{settingId} {
+      // Tous les utilisateurs authentifiés peuvent lire les paramètres
+      allow read: if isAuthenticated();
+      // Seuls les admins peuvent modifier les paramètres
+      allow write: if isAdmin();
+    }
+
+    // Règles pour l'historique des paramètres
+    match /settings_history/{historyId} {
+      // Seuls les admins peuvent lire l'historique
+      allow read: if isAdmin();
+      // Seul le système peut créer l'historique
+      allow create: if isAdmin();
+      // Interdire la modification/suppression pour l'intégrité
+      allow update, delete: if false;
+    }
+
+    // Règles pour les notifications admin
+    match /admin_notifications/{notificationId} {
+      // Seuls les admins peuvent lire/écrire les notifications admin
+      allow read, write: if isAdmin();
+    }
+
+    // Règles pour les notifications utilisateur
+    match /user_notifications/{notificationId} {
+      // Un utilisateur peut lire ses propres notifications
+      // Un admin peut lire toutes les notifications
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+      // Seuls les admins peuvent créer des notifications
+      allow create: if isAdmin();
+      // Un utilisateur peut marquer ses notifications comme lues
+      // Un admin peut modifier toutes les notifications
+      allow update: if isAuthenticated() && (
+        (resource.data.userId == request.auth.uid &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])) ||
+        isAdmin()
+      );
+      // Seuls les admins peuvent supprimer des notifications
+      allow delete: if isAdmin();
+    }
+
+    // Règles pour les notifications planifiées
+    match /scheduled_notifications/{notificationId} {
+      // Seuls les admins peuvent gérer les notifications planifiées
+      allow read, write: if isAdmin();
+    }
+
+    // Règles pour les rapports planifiés
+    match /scheduled_reports/{reportId} {
+      // Seuls les admins peuvent gérer les rapports planifiés
+      allow read, write: if isAdmin();
+    }
+
+    // Règles pour les notifications reçues (historique)
+    match /received_notifications/{notificationId} {
+      // Seuls les admins peuvent lire l'historique des notifications
+      allow read: if isAdmin();
+      // Seul le système peut créer l'historique
+      allow create: if isAdmin();
+      // Interdire la modification/suppression pour l'intégrité
+      allow update, delete: if false;
+    }
+
+    // Règles pour les métriques système (monitoring)
+    match /system_metrics/{metricId} {
+      // Seuls les admins peuvent lire les métriques système
+      allow read: if isAdmin();
+      // Seul le système peut créer/modifier les métriques
+      allow write: if isAdmin();
+    }
+
     // Règles par défaut - refuser tout accès non spécifié
     match /{document=**} {
       allow read, write: if false;
