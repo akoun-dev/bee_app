@@ -32,11 +32,16 @@ class AgentCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image de l'agent
-            const SizedBox(
+            // Image de l'agent avec Firebase Storage
+            SizedBox(
               height: 180,
               width: double.infinity,
-              child: AgentImage(height: 180, fit: BoxFit.cover),
+              child: AgentImage(
+                agentId: agent.id,
+                imageUrl: agent.profileImageUrl,
+                height: 180,
+                fit: BoxFit.cover,
+              ),
             ),
 
             Padding(
@@ -173,11 +178,16 @@ class AgentCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Image de l'agent (encore plus petite)
-            const SizedBox(
+            // Image de l'agent avec Firebase Storage (version compacte)
+            SizedBox(
               height: 100,
               width: double.infinity,
-              child: AgentImage(height: 100, fit: BoxFit.cover),
+              child: AgentImage(
+                agentId: agent.id,
+                imageUrl: agent.profileImageUrl,
+                height: 100,
+                fit: BoxFit.cover,
+              ),
             ),
 
             // Informations de l'agent

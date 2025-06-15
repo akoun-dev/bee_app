@@ -1,0 +1,140 @@
+{
+  "agents_exemples": [
+    {
+      "id": "agent_001",
+      "fullName": "Kouassi Jean-Baptiste",
+      "age": 32,
+      "gender": "M",
+      "bloodType": "O+",
+      "profession": "Agent de sécurité rapprochée",
+      "background": "Ex-militaire, 8 ans d'expérience dans la sécurité privée",
+      "educationLevel": "BAC+2 en Sécurité et Protection",
+      "isCertified": true,
+      "matricule": "ZS-001-2024",
+      "profileImageUrl": "https://firebasestorage.googleapis.com/v0/b/votre-projet.appspot.com/o/agents%2Fagent_001%2Fprofile.jpg?alt=media",
+      "averageRating": 4.8,
+      "ratingCount": 15,
+      "isAvailable": true,
+      "email": "j.kouassi@zibenesecurity.com",
+      "phoneNumber": "+225 07 12 34 56 78",
+      "specialty": "Protection VIP",
+      "experience": 8
+    },
+    {
+      "id": "agent_002", 
+      "fullName": "Adjoua Marie-Claire",
+      "age": 28,
+      "gender": "F",
+      "bloodType": "A+",
+      "profession": "Agent de sécurité événementielle",
+      "background": "Formation en arts martiaux, spécialisée dans la sécurité féminine",
+      "educationLevel": "BAC+3 en Criminologie",
+      "isCertified": true,
+      "matricule": "ZS-002-2024",
+      "profileImageUrl": "https://firebasestorage.googleapis.com/v0/b/votre-projet.appspot.com/o/agents%2Fagent_002%2Fprofile.jpg?alt=media",
+      "averageRating": 4.9,
+      "ratingCount": 22,
+      "isAvailable": true,
+      "email": "m.adjoua@zibenesecurity.com",
+      "phoneNumber": "+225 05 98 76 54 32",
+      "specialty": "Sécurité féminine",
+      "experience": 5
+    },
+    {
+      "id": "agent_003",
+      "fullName": "Traoré Mamadou",
+      "age": 35,
+      "gender": "M", 
+      "bloodType": "B+",
+      "profession": "Chef d'équipe sécurité",
+      "background": "Ex-gendarme, expert en gestion d'équipes de sécurité",
+      "educationLevel": "BAC+4 en Management de la Sécurité",
+      "isCertified": true,
+      "matricule": "ZS-003-2024",
+      "profileImageUrl": "https://firebasestorage.googleapis.com/v0/b/votre-projet.appspot.com/o/agents%2Fagent_003%2Fprofile.jpg?alt=media",
+      "averageRating": 4.7,
+      "ratingCount": 18,
+      "isAvailable": false,
+      "email": "m.traore@zibenesecurity.com",
+      "phoneNumber": "+225 01 23 45 67 89",
+      "specialty": "Management sécuritaire",
+      "experience": 12
+    },
+    {
+      "id": "agent_004",
+      "fullName": "Bamba Fatou",
+      "age": 26,
+      "gender": "F",
+      "bloodType": "AB+",
+      "profession": "Agent de sécurité mobile",
+      "background": "Diplômée en sécurité, spécialisée dans la surveillance mobile",
+      "educationLevel": "BAC+2 en Techniques de Sécurité",
+      "isCertified": false,
+      "matricule": "ZS-004-2024",
+      "profileImageUrl": null,
+      "averageRating": 4.2,
+      "ratingCount": 8,
+      "isAvailable": true,
+      "email": "f.bamba@zibenesecurity.com",
+      "phoneNumber": "+225 07 11 22 33 44",
+      "specialty": "Surveillance mobile",
+      "experience": 3
+    },
+    {
+      "id": "agent_005",
+      "fullName": "Yao Kwame",
+      "age": 40,
+      "gender": "M",
+      "bloodType": "O-",
+      "profession": "Agent de sécurité industrielle",
+      "background": "20 ans d'expérience dans la sécurité industrielle et portuaire",
+      "educationLevel": "BAC+3 en Sécurité Industrielle",
+      "isCertified": true,
+      "matricule": "ZS-005-2024",
+      "profileImageUrl": "https://firebasestorage.googleapis.com/v0/b/votre-projet.appspot.com/o/agents%2Fagent_005%2Fprofile.jpg?alt=media",
+      "averageRating": 4.6,
+      "ratingCount": 25,
+      "isAvailable": true,
+      "email": "k.yao@zibenesecurity.com",
+      "phoneNumber": "+225 05 55 66 77 88",
+      "specialty": "Sécurité industrielle",
+      "experience": 20
+    }
+  ],
+  
+  "instructions_firebase": {
+    "etape_1": "Créer le dossier 'agents' dans Firebase Storage",
+    "etape_2": "Pour chaque agent, créer un sous-dossier avec son ID (ex: agent_001)",
+    "etape_3": "Télécharger l'image de profil dans le dossier et la nommer 'profile.jpg'",
+    "etape_4": "Copier l'URL de téléchargement et l'ajouter au champ 'profileImageUrl' dans Firestore",
+    "etape_5": "L'application affichera automatiquement les vraies images"
+  },
+  
+  "structure_firebase_storage": {
+    "agents/": {
+      "agent_001/": {
+        "profile.jpg": "Image de Kouassi Jean-Baptiste"
+      },
+      "agent_002/": {
+        "profile.jpg": "Image de Adjoua Marie-Claire"  
+      },
+      "agent_003/": {
+        "profile.jpg": "Image de Traoré Mamadou"
+      },
+      "agent_004/": {
+        "profile.jpg": "Pas d'image - utilisera guard.png par défaut"
+      },
+      "agent_005/": {
+        "profile.jpg": "Image de Yao Kwame"
+      }
+    }
+  },
+  
+  "notes": [
+    "Les agents avec profileImageUrl null ou vide utiliseront l'image par défaut guard.png",
+    "Les images doivent être au format JPG ou PNG, maximum 5MB",
+    "Taille recommandée: 800x800 pixels pour un rendu optimal",
+    "L'application gère automatiquement le cache et les erreurs de chargement",
+    "Les URLs Firebase sont générées automatiquement lors du téléchargement"
+  ]
+}

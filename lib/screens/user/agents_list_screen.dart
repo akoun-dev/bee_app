@@ -547,11 +547,18 @@ class _AgentsListScreenState extends State<AgentsListScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image de l'agent
-            const SizedBox(
+            // Image de l'agent avec URL Firebase
+            SizedBox(
               width: 120,
               height: 140,
-              child: AgentImage(width: 120, height: 140, fit: BoxFit.cover),
+              child: AgentImage(
+                agentId: agent.id,
+                imageUrl: agent.profileImageUrl,
+                width: 120,
+                height: 140,
+                fit: BoxFit.cover,
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
 
             // Informations de l'agent
@@ -706,13 +713,19 @@ class _AgentsListScreenState extends State<AgentsListScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image de l'agent
+            // Image de l'agent avec URL Firebase
             Stack(
               children: [
-                const SizedBox(
+                SizedBox(
                   height: 140,
                   width: double.infinity,
-                  child: AgentImage(height: 140, fit: BoxFit.cover),
+                  child: AgentImage(
+                    agentId: agent.id,
+                    imageUrl: agent.profileImageUrl,
+                    height: 140,
+                    fit: BoxFit.cover,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
 
                 // Badge de disponibilité

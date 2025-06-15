@@ -19,7 +19,7 @@ dependencies:
     # UI
     cupertino_icons: ^1.0.8
     flutter_rating_bar: ^4.0.1
-    cached_network_image: ^3.3.1
+    cached_network_image: ^3.4.1
 
     # État et navigation
     provider: ^6.1.5

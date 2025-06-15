@@ -40,17 +40,33 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
   // Récupérer les statistiques utilisateur
   Future<Map<String, dynamic>> _getUserStatistics(String userId) async {
     try {
-      final databaseService = Provider.of<DatabaseService>(context, listen: false);
+      final databaseService = Provider.of<DatabaseService>(
+        context,
+        listen: false,
+      );
 
       // Récupérer toutes les réservations de l'utilisateur
-      final reservations = await databaseService.getUserReservations(userId).first;
+      final reservations =
+          await databaseService.getUserReservations(userId).first;
 
       // Calculer les statistiques
       int totalReservations = reservations.length;
-      int pendingReservations = reservations.where((r) => r.status == ReservationModel.statusPending).length;
-      int approvedReservations = reservations.where((r) => r.status == ReservationModel.statusApproved).length;
-      int completedReservations = reservations.where((r) => r.status == ReservationModel.statusCompleted).length;
-      int cancelledReservations = reservations.where((r) => r.status == ReservationModel.statusCancelled).length;
+      int pendingReservations =
+          reservations
+              .where((r) => r.status == ReservationModel.statusPending)
+              .length;
+      int approvedReservations =
+          reservations
+              .where((r) => r.status == ReservationModel.statusApproved)
+              .length;
+      int completedReservations =
+          reservations
+              .where((r) => r.status == ReservationModel.statusCompleted)
+              .length;
+      int cancelledReservations =
+          reservations
+              .where((r) => r.status == ReservationModel.statusCancelled)
+              .length;
 
       // Calculer le nombre d'agents différents réservés
       final uniqueAgentIds = reservations.map((r) => r.agentId).toSet();
@@ -59,7 +75,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
       // Calculer la durée totale des missions (en jours)
       int totalDurationDays = 0;
       for (var reservation in reservations) {
-        final duration = reservation.endDate.difference(reservation.startDate).inDays;
+        final duration =
+            reservation.endDate.difference(reservation.startDate).inDays;
         totalDurationDays += duration;
       }
 
@@ -94,8 +111,14 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
 
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
-      final databaseService = Provider.of<DatabaseService>(context, listen: false);
-      final recommendationService = Provider.of<RecommendationService>(context, listen: false);
+      final databaseService = Provider.of<DatabaseService>(
+        context,
+        listen: false,
+      );
+      final recommendationService = Provider.of<RecommendationService>(
+        context,
+        listen: false,
+      );
 
       // Récupérer les données de l'utilisateur actuel
       final userData = await authService.getCurrentUserData();
@@ -104,11 +127,13 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
       }
 
       // Récupérer les réservations récentes
-      final reservations = await databaseService.getUserReservations(userData.uid).first;
+      final reservations =
+          await databaseService.getUserReservations(userData.uid).first;
       final recentReservations = reservations.take(3).toList();
 
       // Récupérer les agents recommandés
-      final recommendedAgents = await recommendationService.getRecommendedAgents(userData.uid);
+      final recommendedAgents = await recommendationService
+          .getRecommendedAgents(userData.uid);
 
       // Récupérer les statistiques utilisateur
       final userStats = await _getUserStatistics(userData.uid);
@@ -137,11 +162,11 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
     return _isLoading
         ? const LoadingIndicator(message: 'Chargement du tableau de bord...')
         : _errorMessage != null
-            ? ErrorMessage(
-                message: 'Erreur: $_errorMessage',
-                onRetry: _loadDashboardData,
-              )
-            : _buildDashboard();
+        ? ErrorMessage(
+          message: 'Erreur: $_errorMessage',
+          onRetry: _loadDashboardData,
+        )
+        : _buildDashboard();
   }
 
   // Construire le tableau de bord
@@ -205,11 +230,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
         ),
         // Bouton de profil
         IconButton(
-          icon: Icon(
-            Icons.person_outline,
-            color: Colors.grey[700],
-            size: 22,
-          ),
+          icon: Icon(Icons.person_outline, color: Colors.grey[700], size: 22),
           onPressed: () => context.go('/profile'),
         ),
         const SizedBox(width: 8),
@@ -233,9 +254,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
 
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -311,10 +330,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                AppTheme.primaryColor.withAlpha(30),
-                Colors.white,
-              ],
+              colors: [AppTheme.primaryColor.withAlpha(30), Colors.white],
             ),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
@@ -339,7 +355,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                   Expanded(
                     child: _buildStatCard(
                       title: 'En attente',
-                      value: _userStats['pendingReservations']?.toString() ?? '0',
+                      value:
+                          _userStats['pendingReservations']?.toString() ?? '0',
                       icon: Icons.hourglass_empty,
                       color: Colors.orange,
                     ),
@@ -352,7 +369,9 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                   Expanded(
                     child: _buildStatCard(
                       title: 'Complétées',
-                      value: _userStats['completedReservations']?.toString() ?? '0',
+                      value:
+                          _userStats['completedReservations']?.toString() ??
+                          '0',
                       icon: Icons.check_circle_outline,
                       color: Colors.green,
                     ),
@@ -436,12 +455,13 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
     );
   }
 
-
-
   // Récupérer les détails d'un agent
   Future<AgentModel?> _getAgentDetails(String agentId) async {
     try {
-      final databaseService = Provider.of<DatabaseService>(context, listen: false);
+      final databaseService = Provider.of<DatabaseService>(
+        context,
+        listen: false,
+      );
       return await databaseService.getAgent(agentId);
     } catch (e) {
       // Utiliser un logger en production au lieu de print
@@ -476,44 +496,46 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: AppTheme.lightColor,
-              width: 1,
-            ),
+            border: Border.all(color: AppTheme.lightColor, width: 1),
           ),
           clipBehavior: Clip.antiAlias,
-          child: _recentReservations.isEmpty
-              ? const Padding(
-                  padding: EdgeInsets.all(24),
-                  child: EmptyMessage(
-                    message: 'Aucune réservation récente',
-                    icon: Icons.event_busy,
+          child:
+              _recentReservations.isEmpty
+                  ? const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: EmptyMessage(
+                      message: 'Aucune réservation récente',
+                      icon: Icons.event_busy,
+                    ),
+                  )
+                  : Column(
+                    children:
+                        _recentReservations.map((reservation) {
+                          return FutureBuilder<AgentModel?>(
+                            future: _getAgentDetails(reservation.agentId),
+                            builder: (context, snapshot) {
+                              final agent = snapshot.data;
+                              return Column(
+                                children: [
+                                  _buildReservationCard(reservation, agent),
+                                  if (_recentReservations.last != reservation)
+                                    const Divider(height: 1, thickness: 1),
+                                ],
+                              );
+                            },
+                          );
+                        }).toList(),
                   ),
-                )
-              : Column(
-                  children: _recentReservations.map((reservation) {
-                    return FutureBuilder<AgentModel?>(
-                      future: _getAgentDetails(reservation.agentId),
-                      builder: (context, snapshot) {
-                        final agent = snapshot.data;
-                        return Column(
-                          children: [
-                            _buildReservationCard(reservation, agent),
-                            if (_recentReservations.last != reservation)
-                              const Divider(height: 1, thickness: 1),
-                          ],
-                        );
-                      },
-                    );
-                  }).toList(),
-                ),
         ),
       ],
     );
   }
 
   // Construire une carte de réservation
-  Widget _buildReservationCard(ReservationModel reservation, AgentModel? agent) {
+  Widget _buildReservationCard(
+    ReservationModel reservation,
+    AgentModel? agent,
+  ) {
     final dateFormat = DateFormat('dd/MM/yyyy');
 
     // Déterminer la couleur en fonction du statut
@@ -544,36 +566,25 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            // Photo de l'agent
+            // Photo de l'agent avec Firebase Storage
             Container(
               width: 56,
               height: 56,
               decoration: BoxDecoration(
                 color: AppTheme.primaryColor.withAlpha(30),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: statusColor.withAlpha(100),
-                  width: 2,
+                border: Border.all(color: statusColor.withAlpha(100), width: 2),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: AgentImage(
+                  agentId: agent?.id,
+                  imageUrl: agent?.profileImageUrl,
+                  width: 56,
+                  height: 56,
+                  fit: BoxFit.cover,
                 ),
               ),
-              child: agent?.profileImageUrl != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.network(
-                        agent!.profileImageUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Icon(
-                          Icons.person,
-                          color: statusColor,
-                          size: 30,
-                        ),
-                      ),
-                    )
-                  : Icon(
-                      Icons.person,
-                      color: statusColor,
-                      size: 30,
-                    ),
             ),
 
             const SizedBox(width: 16),
@@ -602,18 +613,12 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                   const SizedBox(height: 4),
                   Text(
                     'Du ${dateFormat.format(reservation.startDate)} au ${dateFormat.format(reservation.endDate)}',
-                    style: TextStyle(
-                      color: AppTheme.mediumColor,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: AppTheme.mediumColor, fontSize: 14),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     reservation.location,
-                    style: TextStyle(
-                      color: AppTheme.mediumColor,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: AppTheme.mediumColor, fontSize: 14),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -658,51 +663,48 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
         const SizedBox(height: 16),
         _recommendedAgents.isEmpty
             ? Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppTheme.lightColor,
-                    width: 1,
-                  ),
-                ),
-                child: const EmptyMessage(
-                  message: 'Aucun agent recommandé pour le moment',
-                  icon: Icons.person_search,
-                ),
-              )
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.lightColor, width: 1),
+              ),
+              child: const EmptyMessage(
+                message: 'Aucun agent recommandé pour le moment',
+                icon: Icons.person_search,
+              ),
+            )
             : Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      Colors.white,
-                      AppTheme.primaryColor.withAlpha(20),
-                      Colors.white,
-                    ],
-                  ),
-                ),
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _recommendedAgents.length,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  itemBuilder: (context, index) {
-                    final agent = _recommendedAgents[index];
-                    return Container(
-                      width: 150,
-                      margin: const EdgeInsets.symmetric(horizontal: 6),
-                      child: AgentCard(
-                        agent: agent,
-                        onTap: () => context.go('/agent/${agent.id}'),
-                        isCompact: true,
-                      ),
-                    );
-                  },
+              height: 200,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Colors.white,
+                    AppTheme.primaryColor.withAlpha(20),
+                    Colors.white,
+                  ],
                 ),
               ),
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _recommendedAgents.length,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                itemBuilder: (context, index) {
+                  final agent = _recommendedAgents[index];
+                  return Container(
+                    width: 150,
+                    margin: const EdgeInsets.symmetric(horizontal: 6),
+                    child: AgentCard(
+                      agent: agent,
+                      onTap: () => context.go('/agent/${agent.id}'),
+                      isCompact: true,
+                    ),
+                  );
+                },
+              ),
+            ),
       ],
     );
   }

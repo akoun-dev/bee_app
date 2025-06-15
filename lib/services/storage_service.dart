@@ -63,7 +63,10 @@ class StorageService {
   }
 
   // Télécharger une image de profil agent
-  Future<String?> uploadAgentProfileImage(String agentId, File imageFile) async {
+  Future<String?> uploadAgentProfileImage(
+    String agentId,
+    File imageFile,
+  ) async {
     try {
       final storageRef = _storage.ref().child('agents/$agentId/profile.jpg');
       final uploadTask = storageRef.putFile(imageFile);
@@ -88,6 +91,41 @@ class StorageService {
     } catch (e) {
       // Utiliser un logger en production au lieu de print
       // Logger.error('Erreur lors de la suppression de l\'image: ${e.toString()}');
+    }
+  }
+
+  // Obtenir l'URL de l'image de profil d'un agent
+  Future<String?> getAgentProfileImageUrl(String agentId) async {
+    try {
+      final storageRef = _storage.ref().child('agents/$agentId/profile.jpg');
+      final downloadUrl = await storageRef.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      // L'image n'existe pas ou erreur de récupération
+      return null;
+    }
+  }
+
+  // Obtenir l'URL de l'image de profil d'un utilisateur
+  Future<String?> getUserProfileImageUrl(String userId) async {
+    try {
+      final storageRef = _storage.ref().child('users/$userId/profile.jpg');
+      final downloadUrl = await storageRef.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      // L'image n'existe pas ou erreur de récupération
+      return null;
+    }
+  }
+
+  // Vérifier si une image existe dans le storage
+  Future<bool> imageExists(String path) async {
+    try {
+      final storageRef = _storage.ref().child(path);
+      await storageRef.getMetadata();
+      return true;
+    } catch (e) {
+      return false;
     }
   }
 }

@@ -182,8 +182,10 @@ class AgentAvatar extends StatelessWidget {
   }
 }
 
-// Widget pour les images d'agents en format rectangulaire
+// Widget pour les images d'agents avec support Firebase Storage
 class AgentImage extends StatelessWidget {
+  final String? agentId; // ID de l'agent pour charger son image
+  final String? imageUrl; // URL directe de l'image (optionnel)
   final double? width;
   final double? height;
   final BoxFit fit;
@@ -191,6 +193,8 @@ class AgentImage extends StatelessWidget {
 
   const AgentImage({
     super.key,
+    this.agentId,
+    this.imageUrl,
     this.width,
     this.height,
     this.fit = BoxFit.cover,
@@ -199,13 +203,125 @@ class AgentImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget image = Image.asset(
-      'assets/images/guard.png',
-      width: width,
-      height: height,
-      fit: fit,
-    );
+    Widget image;
 
+    // Si une URL directe est fournie, l'utiliser avec cache
+    if (imageUrl != null && imageUrl!.isNotEmpty) {
+      image = CachedNetworkImage(
+        imageUrl: imageUrl!,
+        width: width,
+        height: height,
+        fit: fit,
+        // Placeholder pendant le chargement avec animation
+        placeholder:
+            (context, url) => Container(
+              width: width,
+              height: height,
+              color: Colors.grey[200],
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Theme.of(context).primaryColor,
+                      ),
+                    ),
+                  ),
+                  if (height != null && height! > 60) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Chargement...',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+        // Image par défaut en cas d'erreur - utiliser l'image guard.png
+        errorWidget:
+            (context, url, error) => Image.asset(
+              'assets/images/guard.png',
+              width: width,
+              height: height,
+              fit: fit,
+              // Si même l'image par défaut échoue, afficher un placeholder
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  width: width,
+                  height: height,
+                  color: Colors.grey[200],
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.security,
+                        size: (height ?? 100) * 0.4,
+                        color: Colors.grey[400],
+                      ),
+                      if (height != null && height! > 80)
+                        Text(
+                          'Agent\nZIBENE',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
+        // Configuration du cache
+        memCacheWidth: width?.toInt(),
+        memCacheHeight: height?.toInt(),
+        maxWidthDiskCache: 800, // Limite la taille sur disque
+        maxHeightDiskCache: 800,
+      );
+    } else {
+      // Image par défaut si aucune URL n'est fournie - utiliser l'image guard.png
+      image = Image.asset(
+        'assets/images/guard.png',
+        width: width,
+        height: height,
+        fit: fit,
+        // Si l'image par défaut n'existe pas, afficher un placeholder
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: width,
+            height: height,
+            color: Colors.grey[200],
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.security,
+                  size: (height ?? 100) * 0.4,
+                  color: Colors.grey[400],
+                ),
+                if (height != null && height! > 80)
+                  Text(
+                    'Agent\nZIBENE',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      );
+    }
+
+    // Appliquer le borderRadius si spécifié
     if (borderRadius != null) {
       return ClipRRect(borderRadius: borderRadius!, child: image);
     }

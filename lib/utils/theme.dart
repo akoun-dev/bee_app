@@ -6,10 +6,16 @@ class AppTheme {
   static const Color primaryColor = Color(0xFFFFC107); // Jaune vif
   static const Color secondaryColor = Color(0xFF000000); // Noir
   static const Color accentColor = Color(0xFFFFD740); // Jaune accent
-  static const Color errorColor = Color(0xFFE53935); // Rouge (conservé pour les erreurs)
+  static const Color errorColor = Color(
+    0xFFE53935,
+  ); // Rouge (conservé pour les erreurs)
   static const Color successColor = Color(0xFF4CAF50); // Vert (pour les succès)
-  static const Color warningColor = Color(0xFFFF9800); // Orange (pour les avertissements)
-  static const Color infoColor = Color(0xFF2196F3); // Bleu (pour les informations)
+  static const Color warningColor = Color(
+    0xFFFF9800,
+  ); // Orange (pour les avertissements)
+  static const Color infoColor = Color(
+    0xFF2196F3,
+  ); // Bleu (pour les informations)
 
   // Couleurs neutres
   static const Color darkColor = Color(0xFF000000); // Noir
@@ -54,7 +60,9 @@ class AppTheme {
         foregroundColor: secondaryColor, // Texte noir
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(6), // Coins moins arrondis pour un look professionnel
+          borderRadius: BorderRadius.circular(
+            6,
+          ), // Coins moins arrondis pour un look professionnel
         ),
         elevation: 1, // Légère élévation
         shadowColor: Color(0x29000000), // Ombre subtile
@@ -74,10 +82,15 @@ class AppTheme {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: secondaryColor, // Texte noir
-        side: const BorderSide(color: primaryColor, width: 1.5), // Bordure jaune plus visible
+        side: const BorderSide(
+          color: primaryColor,
+          width: 1.5,
+        ), // Bordure jaune plus visible
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(6), // Coins moins arrondis pour un look professionnel
+          borderRadius: BorderRadius.circular(
+            6,
+          ), // Coins moins arrondis pour un look professionnel
         ),
       ),
     ),
@@ -87,7 +100,9 @@ class AppTheme {
       filled: true,
       fillColor: Colors.white,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(6), // Coins moins arrondis pour un look professionnel
+        borderRadius: BorderRadius.circular(
+          6,
+        ), // Coins moins arrondis pour un look professionnel
         borderSide: const BorderSide(color: mediumColor, width: 1),
       ),
       enabledBorder: OutlineInputBorder(
@@ -96,27 +111,39 @@ class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
-        borderSide: const BorderSide(color: primaryColor, width: 2), // Bordure jaune en focus
+        borderSide: const BorderSide(
+          color: primaryColor,
+          width: 2,
+        ), // Bordure jaune en focus
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
         borderSide: const BorderSide(color: errorColor, width: 1.5),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      labelStyle: const TextStyle(color: mediumColor, fontWeight: FontWeight.w500),
-      floatingLabelStyle: const TextStyle(color: secondaryColor, fontWeight: FontWeight.w600),
+      labelStyle: const TextStyle(
+        color: mediumColor,
+        fontWeight: FontWeight.w500,
+      ),
+      floatingLabelStyle: const TextStyle(
+        color: secondaryColor,
+        fontWeight: FontWeight.w600,
+      ),
       // Ombre subtile pour les champs de texte
       isDense: true,
     ),
 
     // Cartes - Design élégant avec bordure fine et ombre subtile
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: Colors.white,
       elevation: 1, // Élévation subtile
       shadowColor: const Color(0x29000000), // Ombre légère
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: const BorderSide(color: Color(0xFFE0E0E0), width: 0.5), // Bordure très fine
+        side: const BorderSide(
+          color: Color(0xFFE0E0E0),
+          width: 0.5,
+        ), // Bordure très fine
       ),
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
     ),
@@ -163,11 +190,7 @@ class AppTheme {
         color: mediumColor, // Gris foncé pour le texte courant
         height: 1.5, // Hauteur de ligne pour une meilleure lisibilité
       ),
-      bodyMedium: TextStyle(
-        fontSize: 14,
-        color: mediumColor,
-        height: 1.5,
-      ),
+      bodyMedium: TextStyle(fontSize: 14, color: mediumColor, height: 1.5),
       labelLarge: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w500,
@@ -257,7 +280,9 @@ class AppTheme {
         foregroundColor: secondaryColor, // Texte noir
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(6), // Coins moins arrondis pour un look professionnel
+          borderRadius: BorderRadius.circular(
+            6,
+          ), // Coins moins arrondis pour un look professionnel
         ),
         elevation: 1, // Légère élévation
         shadowColor: Color(0x29000000), // Ombre subtile
@@ -277,10 +302,15 @@ class AppTheme {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: primaryColor, // Texte jaune
-        side: const BorderSide(color: primaryColor, width: 1.5), // Bordure jaune plus visible
+        side: const BorderSide(
+          color: primaryColor,
+          width: 1.5,
+        ), // Bordure jaune plus visible
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(6), // Coins moins arrondis pour un look professionnel
+          borderRadius: BorderRadius.circular(
+            6,
+          ), // Coins moins arrondis pour un look professionnel
         ),
       ),
     ),
@@ -290,7 +320,9 @@ class AppTheme {
       filled: true,
       fillColor: Color(0xFF121212), // Gris très foncé
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(6), // Coins moins arrondis pour un look professionnel
+        borderRadius: BorderRadius.circular(
+          6,
+        ), // Coins moins arrondis pour un look professionnel
         borderSide: const BorderSide(color: mediumColor, width: 1),
       ),
       enabledBorder: OutlineInputBorder(
@@ -299,26 +331,38 @@ class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
-        borderSide: const BorderSide(color: primaryColor, width: 2), // Bordure jaune en focus
+        borderSide: const BorderSide(
+          color: primaryColor,
+          width: 2,
+        ), // Bordure jaune en focus
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
         borderSide: const BorderSide(color: errorColor, width: 1.5),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      labelStyle: const TextStyle(color: lightColor, fontWeight: FontWeight.w500),
-      floatingLabelStyle: const TextStyle(color: primaryColor, fontWeight: FontWeight.w600),
+      labelStyle: const TextStyle(
+        color: lightColor,
+        fontWeight: FontWeight.w500,
+      ),
+      floatingLabelStyle: const TextStyle(
+        color: primaryColor,
+        fontWeight: FontWeight.w600,
+      ),
       isDense: true,
     ),
 
     // Cartes - Design élégant avec bordure fine et ombre subtile
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: Color(0xFF1E1E1E), // Gris foncé
       elevation: 1, // Élévation subtile
       shadowColor: const Color(0x29000000), // Ombre légère
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: const BorderSide(color: Color(0xFF2C2C2C), width: 0.5), // Bordure très fine
+        side: const BorderSide(
+          color: Color(0xFF2C2C2C),
+          width: 0.5,
+        ), // Bordure très fine
       ),
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
     ),
@@ -365,11 +409,7 @@ class AppTheme {
         color: lightColor, // Gris clair pour le texte courant
         height: 1.5, // Hauteur de ligne pour une meilleure lisibilité
       ),
-      bodyMedium: TextStyle(
-        fontSize: 14,
-        color: lightColor,
-        height: 1.5,
-      ),
+      bodyMedium: TextStyle(fontSize: 14, color: lightColor, height: 1.5),
       labelLarge: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w500,

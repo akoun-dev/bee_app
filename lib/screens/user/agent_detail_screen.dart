@@ -90,12 +90,16 @@ class _AgentDetailScreenState extends State<AgentDetailScreen> {
 
     return CustomScrollView(
       slivers: [
-        // AppBar avec image de profil
+        // AppBar avec image de profil Firebase
         SliverAppBar(
           expandedHeight: 300,
           pinned: true,
-          flexibleSpace: const FlexibleSpaceBar(
-            background: AgentImage(fit: BoxFit.cover),
+          flexibleSpace: FlexibleSpaceBar(
+            background: AgentImage(
+              agentId: _agent!.id,
+              imageUrl: _agent!.profileImageUrl,
+              fit: BoxFit.cover,
+            ),
           ),
           actions: [
             // Bouton de partage
