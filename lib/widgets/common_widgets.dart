@@ -28,7 +28,7 @@ class PrimaryButton extends StatefulWidget {
 }
 
 class _PrimaryButtonState extends State<PrimaryButton> {
-  bool _isPressed = false;
+  final bool _isPressed = false;
   DateTime? _lastPressedTime;
   Timer? _debounceTimer;
 
@@ -126,7 +126,7 @@ class SecondaryButton extends StatefulWidget {
 }
 
 class _SecondaryButtonState extends State<SecondaryButton> {
-  bool _isPressed = false;
+  final bool _isPressed = false;
   DateTime? _lastPressedTime;
   Timer? _debounceTimer;
 

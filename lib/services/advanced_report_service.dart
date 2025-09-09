@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
 
@@ -25,7 +24,7 @@ class AdvancedReportService {
     // Récupérer tous les agents
     final agentsSnapshot = await _firestore.collection('agents').get();
     final agents = agentsSnapshot.docs
-        .map((doc) => AgentModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+        .map((doc) => AgentModel.fromMap(doc.data(), doc.id))
         .toList();
 
     // Récupérer les réservations pour la période
@@ -36,7 +35,7 @@ class AdvancedReportService {
         .get();
 
     final reservations = reservationsSnapshot.docs
-        .map((doc) => ReservationModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+        .map((doc) => ReservationModel.fromMap(doc.data(), doc.id))
         .toList();
 
     // Récupérer les avis pour la période
@@ -47,7 +46,7 @@ class AdvancedReportService {
         .get();
 
     final reviews = reviewsSnapshot.docs
-        .map((doc) => ReviewModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+        .map((doc) => ReviewModel.fromMap(doc.data(), doc.id))
         .toList();
 
     // Calculer les métriques par agent
@@ -104,10 +103,10 @@ class AdvancedReportService {
             .length,
         'totalReservations': reservations.length,
         'totalRevenue': agentMetrics.values
-            .fold<double>(0.0, (sum, m) => sum + m['totalRevenue'] as double),
+            .fold<double>(0.0, (sum, m) => sum + m['totalRevenue']),
         'averageCompletionRate': agentMetrics.values.isNotEmpty
             ? agentMetrics.values
-                .fold<double>(0.0, (sum, m) => sum + m['completionRate'] as double) / agentMetrics.length
+                .fold<double>(0.0, (sum, m) => sum + m['completionRate']) / agentMetrics.length
             : 0.0,
       },
       'agentMetrics': agentMetrics,
@@ -131,7 +130,7 @@ class AdvancedReportService {
         .get();
 
     final reservations = reservationsSnapshot.docs
-        .map((doc) => ReservationModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+        .map((doc) => ReservationModel.fromMap(doc.data(), doc.id))
         .toList();
 
     // Calculer les revenus par jour
@@ -219,7 +218,7 @@ class AdvancedReportService {
     // Récupérer les utilisateurs
     final usersSnapshot = await _firestore.collection('users').get();
     final users = usersSnapshot.docs
-        .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+        .map((doc) => UserModel.fromMap(doc.data(), doc.id))
         .toList();
 
     // Récupérer les réservations
@@ -230,7 +229,7 @@ class AdvancedReportService {
         .get();
 
     final reservations = reservationsSnapshot.docs
-        .map((doc) => ReservationModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+        .map((doc) => ReservationModel.fromMap(doc.data(), doc.id))
         .toList();
 
     // Calculer les métriques

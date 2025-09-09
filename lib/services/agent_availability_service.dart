@@ -33,13 +33,13 @@ class AgentAvailabilityService {
           .get();
 
       final activeReservations = activeReservationsQuery.docs
-          .map((doc) => ReservationModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .map((doc) => ReservationModel.fromMap(doc.data(), doc.id))
           .toList();
 
       // Récupérer tous les agents
       final agentsQuery = await _firestore.collection('agents').get();
       final agents = agentsQuery.docs
-          .map((doc) => AgentModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .map((doc) => AgentModel.fromMap(doc.data(), doc.id))
           .toList();
 
       final now = DateTime.now();
@@ -111,7 +111,7 @@ class AgentAvailabilityService {
           .get();
 
       final activeReservations = activeReservationsQuery.docs
-          .map((doc) => ReservationModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .map((doc) => ReservationModel.fromMap(doc.data(), doc.id))
           .toList();
 
       final now = DateTime.now();
@@ -165,7 +165,7 @@ class AgentAvailabilityService {
           .get();
 
       final activeReservations = activeReservationsQuery.docs
-          .map((doc) => ReservationModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .map((doc) => ReservationModel.fromMap(doc.data(), doc.id))
           .toList();
 
       final now = DateTime.now();

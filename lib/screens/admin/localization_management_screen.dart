@@ -97,7 +97,7 @@ class _LocalizationManagementScreenState extends State<LocalizationManagementScr
       
       for (final user in users) {
         try {
-          final localization = await _localizationService.getCurrentConfig();
+          final localization = await _localizationService.getUserLocalization(user.uid);
           if (localization != null) {
             localizations[user.uid] = localization;
           }
@@ -385,7 +385,7 @@ class _LocalizationManagementScreenState extends State<LocalizationManagementScr
               ],
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -710,7 +710,18 @@ class _LocalizationManagementScreenState extends State<LocalizationManagementScr
     try {
       // Créer une configuration par défaut si nécessaire
       final localization = currentLocalization ?? 
-          LocalizationModel.createDefault(user.uid, const Locale('fr', 'FR'));
+          LocalizationModel(
+            userId: user.uid,
+            language: AppLanguage.french,
+            region: AppRegion.france,
+            timeZone: TimeZone.europeParis,
+            dateFormat: LocalizationFormat.european,
+            timeFormat: TimeFormat.hour24,
+            numberFormat: NumberFormat.european,
+            currencyFormat: CurrencyFormat.european,
+            measurementSystem: MeasurementSystem.metric,
+            lastUpdated: DateTime.now(),
+          );
       
       // Valeurs modifiables
       AppLanguage selectedLanguage = localization.language;
@@ -814,9 +825,9 @@ class _LocalizationManagementScreenState extends State<LocalizationManagementScr
 
       if (shouldUpdate == true) {
         // Mettre à jour la configuration
-        await _localizationService.updateLanguage(selectedLanguage);
-        await _localizationService.updateRegion(selectedRegion);
-        await _localizationService.updateTimeZone(selectedTimeZone);
+        await _localizationService.setLanguage(selectedLanguage);
+        await _localizationService.setRegion(selectedRegion);
+        await _localizationService.setTimeZone(selectedTimeZone);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -859,14 +870,7 @@ class _LocalizationManagementScreenState extends State<LocalizationManagementScr
                 _buildDetailRow('Région', localization.region.name),
                 _buildDetailRow('Code de région', localization.region.code),
                 _buildDetailRow('Fuseau horaire', localization.timeZone.name),
-                _buildDetailRow('Offset UTC', localization.timeZone.utcOffset),
-                _buildDetailRow('Format de date', localization.dateFormat.name),
-                _buildDetailRow('Format de temps', localization.timeFormat.name),
-                _buildDetailRow('Format de nombre', localization.numberFormat.name),
-                _buildDetailRow('Format monétaire', localization.currencyFormat.name),
-                _buildDetailRow('Symbole monétaire', localization.getCurrencySymbol()),
-                _buildDetailRow('Code monétaire', localization.getCurrencyCode()),
-                _buildDetailRow('Système de mesure', localization.measurementSystem.name),
+                _buildDetailRow('Offset UTC', localization.timeZone.offset),
                 _buildDetailRow('Dernière mise à jour', 
                   _localizationService.formatDate(localization.lastUpdated)),
               ] else
@@ -900,8 +904,8 @@ class _LocalizationManagementScreenState extends State<LocalizationManagementScr
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Réinitialiser'),
               style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Réinitialiser'),
             ),
           ],
         ),

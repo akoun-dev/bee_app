@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../../models/data_deletion_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/data_deletion_service.dart';

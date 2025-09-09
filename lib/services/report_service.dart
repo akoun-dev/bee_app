@@ -285,7 +285,7 @@ class ReportService {
       final Map<int, int> ratingDistribution = {};
       
       for (final doc in reservationsSnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data();
         final rating = data['rating'] as double?;
         if (rating != null) {
           ratings.add(rating);
@@ -330,7 +330,7 @@ class ReportService {
       final Map<String, double> revenueByAgent = {};
       
       for (final doc in reservationsSnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data();
         final price = data['price'] as double?;
         final startDate = (data['startDate'] as Timestamp).toDate();
         final agentId = data['agentId'] as String?;

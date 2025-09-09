@@ -400,7 +400,7 @@ class DataDeletionService {
         // Anonymiser les données au lieu de supprimer complètement (pour les logs légaux)
         await userDoc.update({
           'fullName': 'Utilisateur supprimé',
-          'email': 'deleted_${userId}@deleted.com',
+          'email': 'deleted_$userId@deleted.com',
           'phone': '+0000000000',
           'profileImageUrl': null,
           'address': null,

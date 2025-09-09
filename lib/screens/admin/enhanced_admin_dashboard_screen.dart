@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../../models/user_model.dart';
 import '../../models/agent_model.dart';
 import '../../models/reservation_model.dart';
@@ -35,7 +34,7 @@ class _EnhancedAdminDashboardScreenState extends State<EnhancedAdminDashboardScr
 
   // État de l'écran
   bool _isLoading = true;
-  int _selectedIndex = 0;
+  final int _selectedIndex = 0;
   
   // Données du tableau de bord
   Map<String, dynamic> _statistics = {};
@@ -50,7 +49,7 @@ class _EnhancedAdminDashboardScreenState extends State<EnhancedAdminDashboardScr
   // Contrôleurs de recherche et filtres
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  String _filterType = 'all';
+  final String _filterType = 'all';
 
   @override
   void initState() {
@@ -103,7 +102,7 @@ class _EnhancedAdminDashboardScreenState extends State<EnhancedAdminDashboardScr
   Future<void> _loadStatistics() async {
     try {
       // Obtenir les statistiques des utilisateurs
-      final users = await _databaseService.getAllUsers();
+      final users = _databaseService.getAllUsers();
       final activeUsers = users.where((u) => u.isActive).length;
       final inactiveUsers = users.where((u) => !u.isActive).length;
 
@@ -113,7 +112,7 @@ class _EnhancedAdminDashboardScreenState extends State<EnhancedAdminDashboardScr
       final inactiveAgents = agents.where((a) => !a.isAvailable).length;
 
       // Obtenir les statistiques des réservations
-      final reservations = await _databaseService.getAllReservations();
+      final reservations = _databaseService.getAllReservations();
       final pendingReservations = reservations.where((r) => r.status == 'pending').length;
       final confirmedReservations = reservations.where((r) => r.status == 'confirmed').length;
       final completedReservations = reservations.where((r) => r.status == 'completed').length;
@@ -141,7 +140,7 @@ class _EnhancedAdminDashboardScreenState extends State<EnhancedAdminDashboardScr
 
   Future<void> _loadRecentUsers() async {
     try {
-      final users = await _databaseService.getAllUsers();
+      final users = _databaseService.getAllUsers();
       setState(() {
         _recentUsers = users.take(10).toList();
       });
@@ -163,7 +162,7 @@ class _EnhancedAdminDashboardScreenState extends State<EnhancedAdminDashboardScr
 
   Future<void> _loadRecentReservations() async {
     try {
-      final reservations = await _databaseService.getAllReservations();
+      final reservations = _databaseService.getAllReservations();
       setState(() {
         _recentReservations = reservations.take(10).toList();
       });

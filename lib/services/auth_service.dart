@@ -301,7 +301,7 @@ class AuthService {
       final snapshot = await _firestore.collection('users').get();
       
       return snapshot.docs.map((doc) => 
-        UserModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)
+        UserModel.fromMap(doc.data(), doc.id)
       ).toList();
     } catch (e) {
       debugPrint('Erreur lors de la récupération de tous les utilisateurs: $e');

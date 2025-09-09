@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/user_model.dart';
 import '../../models/consent_model.dart';
-import '../../models/localization_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/consent_service.dart';
 import '../../services/localization_service.dart';
 import '../../services/authorization_service.dart';
 import '../../widgets/admin_app_bar.dart';
 import '../../widgets/admin_drawer.dart';
-import '../../widgets/common_widgets.dart';
 
 class ConsentManagementScreen extends StatefulWidget {
   const ConsentManagementScreen({super.key});
@@ -29,7 +27,7 @@ class _ConsentManagementScreenState extends State<ConsentManagementScreen> {
   bool _isLoading = true;
   bool _isLoadingUsers = false;
   List<UserModel> _users = [];
-  List<ConsentModel> _consents = {};
+  Map<String, ConsentModel> _consents = {};
   Map<String, dynamic> _statistics = {};
   
   // Contrôleurs et filtres
@@ -129,6 +127,25 @@ class _ConsentManagementScreenState extends State<ConsentManagementScreen> {
     }
   }
 
+  // Méthodes utilitaires pour vérifier les consentements
+  bool _hasAllRequiredConsents(ConsentModel consent) {
+    return consent.consents.values.every((consentData) => 
+        !consentData.required || consentData.granted && consentData.isValid());
+  }
+
+  bool _hasExpiredConsents(ConsentModel consent) {
+    return consent.consents.values.any((consentData) => 
+        consentData.granted && consentData.isExpired());
+  }
+
+  bool _hasExpiringConsents(ConsentModel consent) {
+    final now = DateTime.now();
+    return consent.consents.values.any((consentData) => 
+        consentData.granted && 
+        consentData.expiresAt != null && 
+        consentData.expiresAt!.difference(now).inDays <= 30);
+  }
+
   List<UserModel> get _filteredUsers {
     return _users.where((user) {
       // Filtre de recherche
@@ -146,16 +163,16 @@ class _ConsentManagementScreenState extends State<ConsentManagementScreen> {
 
         switch (_filterType) {
           case 'all_granted':
-            if (!consent.hasAllRequiredConsents()) return false;
+            if (consent == null || !_hasAllRequiredConsents(consent)) return false;
             break;
           case 'missing_required':
-            if (consent.hasAllRequiredConsents()) return false;
+            if (consent == null || _hasAllRequiredConsents(consent)) return false;
             break;
           case 'expired':
-            if (!consent.hasExpiredConsents()) return false;
+            if (consent == null || !_hasExpiredConsents(consent)) return false;
             break;
           case 'expiring_soon':
-            if (!consent.hasExpiringConsents()) return false;
+            if (consent == null || !_hasExpiringConsents(consent)) return false;
             break;
         }
       }
@@ -165,7 +182,7 @@ class _ConsentManagementScreenState extends State<ConsentManagementScreen> {
         final consent = _consents[user.uid];
 
         final typeKey = _filterConsentType!.key;
-        if (!consent.hasConsent(typeKey)) return false;
+        if (consent == null || !consent.hasConsent(typeKey)) return false;
       }
 
       return true;
@@ -700,23 +717,23 @@ class _ConsentManagementScreenState extends State<ConsentManagementScreen> {
                               ),
                             ],
                           ),
-                          ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            consentData.description!,
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        ],
-                          ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            'But: ${consentData.purpose!}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontStyle: FontStyle.italic,
+                          if (consentData.description.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              consentData.description,
+                              style: const TextStyle(fontSize: 12),
                             ),
-                          ),
-                        ],
+                          ],
+                          if (consentData.purpose.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'But: ${consentData.purpose}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
                           if (consentData.grantedAt != null) ...[
                             const SizedBox(height: 4),
                             Text(
@@ -741,7 +758,7 @@ class _ConsentManagementScreenState extends State<ConsentManagementScreen> {
                       ),
                     ),
                   );
-                }).toList()
+                })
               else
                 const Text('Aucun consentement enregistré'),
             ],

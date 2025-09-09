@@ -135,7 +135,7 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
                         _showActiveOnly = selected;
                         if (selected) {
                           _showUpcomingOnly = false;
-                          _statusFilter = ReservationModel.statusApproved;
+                          _statusFilter = 'approved';
                         } else if (!_showUpcomingOnly) {
                           _statusFilter = 'all';
                         }
@@ -164,7 +164,7 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
                         _showUpcomingOnly = selected;
                         if (selected) {
                           _showActiveOnly = false;
-                          _statusFilter = ReservationModel.statusApproved;
+                          _statusFilter = 'approved';
                           _startDateFilter = DateTime.now();
                         } else if (!_showActiveOnly) {
                           _statusFilter = 'all';
@@ -189,11 +189,11 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
                   // Filtre pour les réservations en attente
                   FilterChip(
                     label: const Text('En attente'),
-                    selected: _statusFilter == ReservationModel.statusPending,
+                    selected: _statusFilter == 'pending',
                     onSelected: (selected) {
                       setState(() {
                         if (selected) {
-                          _statusFilter = ReservationModel.statusPending;
+                          _statusFilter = 'pending';
                           _showActiveOnly = false;
                           _showUpcomingOnly = false;
                         } else {
@@ -203,14 +203,14 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
                     },
                     avatar: Icon(
                       Icons.hourglass_empty,
-                      color: _statusFilter == ReservationModel.statusPending ? Colors.white : Colors.grey,
+                      color: _statusFilter == 'pending' ? Colors.white : Colors.grey,
                       size: 18,
                     ),
                     backgroundColor: Colors.grey[200],
                     selectedColor: Colors.orange,
                     checkmarkColor: Colors.white,
                     labelStyle: TextStyle(
-                      color: _statusFilter == ReservationModel.statusPending ? Colors.white : Colors.black,
+                      color: _statusFilter == 'pending' ? Colors.white : Colors.black,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -218,11 +218,11 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
                   // Filtre pour les réservations terminées
                   FilterChip(
                     label: const Text('Terminées'),
-                    selected: _statusFilter == ReservationModel.statusCompleted,
+                    selected: _statusFilter == 'completed',
                     onSelected: (selected) {
                       setState(() {
                         if (selected) {
-                          _statusFilter = ReservationModel.statusCompleted;
+                          _statusFilter = 'completed';
                           _showActiveOnly = false;
                           _showUpcomingOnly = false;
                         } else {
@@ -232,14 +232,14 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
                     },
                     avatar: Icon(
                       Icons.check_circle,
-                      color: _statusFilter == ReservationModel.statusCompleted ? Colors.white : Colors.grey,
+                      color: _statusFilter == 'completed' ? Colors.white : Colors.grey,
                       size: 18,
                     ),
                     backgroundColor: Colors.grey[200],
                     selectedColor: Colors.green,
                     checkmarkColor: Colors.white,
                     labelStyle: TextStyle(
-                      color: _statusFilter == ReservationModel.statusCompleted ? Colors.white : Colors.black,
+                      color: _statusFilter == 'completed' ? Colors.white : Colors.black,
                     ),
                   ),
                 ],
@@ -347,18 +347,18 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
     if (_statusFilter == 'all' && !_showActiveOnly && !_showUpcomingOnly) {
       sortedReservations.sort((a, b) {
         // Priorité 1: Réservations en attente
-        if (a.status == ReservationModel.statusPending && b.status != ReservationModel.statusPending) {
+        if (a.status == 'pending' && b.status != 'pending') {
           return -1;
         }
-        if (a.status != ReservationModel.statusPending && b.status == ReservationModel.statusPending) {
+        if (a.status != 'pending' && b.status == 'pending') {
           return 1;
         }
 
         // Priorité 2: Réservations approuvées en cours
-        bool aIsActive = a.status == ReservationModel.statusApproved &&
+        bool aIsActive = a.status == 'approved' &&
                          a.startDate.isBefore(now) &&
                          a.endDate.isAfter(now);
-        bool bIsActive = b.status == ReservationModel.statusApproved &&
+        bool bIsActive = b.status == 'approved' &&
                          b.startDate.isBefore(now) &&
                          b.endDate.isAfter(now);
 
@@ -366,9 +366,9 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
         if (!aIsActive && bIsActive) return 1;
 
         // Priorité 3: Réservations approuvées à venir
-        bool aIsUpcoming = a.status == ReservationModel.statusApproved &&
+        bool aIsUpcoming = a.status == 'approved' &&
                            a.startDate.isAfter(now);
-        bool bIsUpcoming = b.status == ReservationModel.statusApproved &&
+        bool bIsUpcoming = b.status == 'approved' &&
                            b.startDate.isAfter(now);
 
         if (aIsUpcoming && !bIsUpcoming) return -1;
@@ -388,7 +388,7 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
       // Filtre pour les réservations en cours
       if (_showActiveOnly) {
         // Vérifier que la réservation est approuvée et en cours
-        if (reservation.status != ReservationModel.statusApproved) {
+        if (reservation.status != 'approved') {
           return false;
         }
 
@@ -401,7 +401,7 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
       // Filtre pour les réservations à venir
       if (_showUpcomingOnly) {
         // Vérifier que la réservation est approuvée et à venir
-        if (reservation.status != ReservationModel.statusApproved) {
+        if (reservation.status != 'approved') {
           return false;
         }
 
@@ -613,11 +613,11 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
                     children: [
                       // Bouton pour gérer la disponibilité de l'agent (admin seulement)
                       FutureBuilder<UserModel?>(
-                        future: databaseService.getUser(authService.currentUser!.uid),
+                        future: Provider.of<DatabaseService>(context, listen: false).getUser(Provider.of<AuthService>(context, listen: false).currentUser!.uid),
                         builder: (context, userSnapshot) {
                           final user = userSnapshot.data;
                           final canModifyAvailability = user != null && 
-                              availabilityService.canModifyAgentAvailability(user);
+                              Provider.of<AgentAvailabilityService>(context, listen: false).canModifyAgentAvailability(user);
 
                           if (canModifyAvailability) {
                             return IconButton(
@@ -646,7 +646,7 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
                       const SizedBox(width: 8),
 
                       // Bouton d'action selon le statut
-                      if (reservation.status == ReservationModel.statusPending)
+                      if (reservation.status == 'pending')
                         ElevatedButton.icon(
                           icon: const Icon(Icons.check),
                           label: const Text('Approuver'),
@@ -752,15 +752,15 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
                     items: [
                       const DropdownMenuItem(value: 'all', child: Text('Tous')),
                       DropdownMenuItem(
-                        value: ReservationModel.statusPending,
+                        value: 'pending',
                         child: Text(AppConstants.pending),
                       ),
                       DropdownMenuItem(
-                        value: ReservationModel.statusApproved,
+                        value: 'approved',
                         child: Text(AppConstants.approved),
                       ),
                       DropdownMenuItem(
-                        value: ReservationModel.statusCompleted,
+                        value: 'completed',
                         child: Text(AppConstants.completed),
                       ),
                     ],
@@ -902,12 +902,12 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
       }
 
       // Vérifier que la réservation est bien en attente
-      if (currentReservation.status != ReservationModel.statusPending) {
+      if (currentReservation.status != 'pending') {
         throw Exception('La réservation n\'est plus en attente');
       }
 
       // Mettre à jour le statut de la réservation
-      final updatedReservation = reservation.approve();
+      final updatedReservation = reservation.copyWith(status: 'approved');
       await databaseService.updateReservation(updatedReservation);
 
       if (mounted) {
@@ -988,18 +988,6 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
     );
   }
 
-  // Actions en masse avec protection contre les actions multiples
-  Future<void> _bulkApprove() async {
-    // Vérifier si une action est déjà en cours
-    if (_isProcessingAction) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Une action est déjà en cours, veuillez patienter...'),
-          backgroundColor: AppTheme.mediumColor,
-        ),
-    );
-  }
-
   // Mettre à jour la disponibilité de tous les agents
   Future<void> _updateAllAgentsAvailability() async {
     final availabilityService = Provider.of<AgentAvailabilityService>(context, listen: false);
@@ -1043,7 +1031,7 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Gérer la disponibilité'),
+        title: const Text('Gérer la disponibilité'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1107,9 +1095,9 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
               ),
             ),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'Que souhaitez-vous faire ?',
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -1199,7 +1187,19 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
       ),
     );
   }
-}
+
+  // Actions en masse avec protection contre les actions multiples
+  Future<void> _bulkApprove() async {
+    // Vérifier si une action est déjà en cours
+    if (_isProcessingAction) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Une action est déjà en cours, veuillez patienter...'),
+          backgroundColor: AppTheme.mediumColor,
+        ),
+      );
+      return;
+    }
 
     setState(() {
       _isProcessingAction = true;
@@ -1219,9 +1219,9 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
           final reservation = await databaseService.getReservation(reservationId);
 
           // Si la réservation existe et est en attente
-          if (reservation != null && reservation.status == ReservationModel.statusPending) {
+          if (reservation != null && reservation.status == 'pending') {
             // Approuver la réservation
-            final updatedReservation = reservation.approve();
+            final updatedReservation = reservation.copyWith(status: 'approved');
             await databaseService.updateReservation(updatedReservation);
             count++;
           }
@@ -1299,9 +1299,9 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
           final reservation = await databaseService.getReservation(reservationId);
 
           // Si la réservation existe et est en attente
-          if (reservation != null && reservation.status == ReservationModel.statusPending) {
+          if (reservation != null && reservation.status == 'pending') {
             // Rejeter la réservation
-            final updatedReservation = reservation.reject();
+            final updatedReservation = reservation.copyWith(status: 'rejected');
             await databaseService.updateReservation(updatedReservation);
             count++;
           }
@@ -1406,7 +1406,7 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
           // Si la réservation existe
           if (reservation != null) {
             // Mettre à jour le statut à "annulé"
-            final updatedReservation = reservation.cancel();
+            final updatedReservation = reservation.copyWith(status: 'cancelled');
             await databaseService.updateReservation(updatedReservation);
             count++;
           }

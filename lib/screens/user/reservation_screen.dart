@@ -43,7 +43,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
 
   // Protection contre les soumissions multiples
   DateTime? _lastSubmissionTime;
-  bool _isFormValid = false;
+  final bool _isFormValid = false;
 
   @override
   void initState() {
@@ -873,7 +873,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
   }
 
   // Gérer les actions administrateur
-  void _handleAdminAction(String action) async {
+  void handleAdminAction(String action) async {
     final authService = Provider.of<AuthService>(context, listen: false);
     final availabilityService = Provider.of<AgentAvailabilityService>(context, listen: false);
 
@@ -888,16 +888,16 @@ class _ReservationScreenState extends State<ReservationScreen> {
 
     switch (action) {
       case 'toggle_availability':
-        _showToggleAvailabilityDialog();
+        showToggleAvailabilityDialog();
         break;
       case 'view_logs':
-        _showAvailabilityLogs();
+        showAvailabilityLogs();
         break;
     }
   }
 
   // Afficher le dialogue de basculement de disponibilité
-  void _showToggleAvailabilityDialog() {
+  void showToggleAvailabilityDialog() {
     if (_agent == null) return;
 
     showDialog(
@@ -956,7 +956,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
   }
 
   // Afficher les logs de disponibilité
-  void _showAvailabilityLogs() {
+  void showAvailabilityLogs() {
     if (_agent == null) return;
 
     // Naviguer vers un écran de logs (à implémenter)
