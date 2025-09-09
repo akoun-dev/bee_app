@@ -2,7 +2,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:logger/logger.dart';
 
 // Service pour gérer les notifications push
@@ -10,8 +10,6 @@ class NotificationService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
   final CollectionReference _notificationsCollection = FirebaseFirestore.instance.collection('notifications');
-  final CollectionReference _usersCollection = FirebaseFirestore.instance.collection('users');
-  final CollectionReference _agentsCollection = FirebaseFirestore.instance.collection('agents');
 
   final Logger logger = Logger();
 
@@ -54,6 +52,19 @@ class NotificationService {
       final token = await _messaging.getToken();
       if (kDebugMode) {
         logger.d('Token FCM: $token');
+      }
+
+      // Enregistrer le token côté serveur via une fonction Cloud
+      if (token != null) {
+        try {
+          await FirebaseFunctions.instance
+              .httpsCallable('registerToken')
+              .call({'token': token});
+        } catch (e) {
+          if (kDebugMode) {
+            logger.e("Erreur lors de l'enregistrement du token: $e");
+          }
+        }
       }
     } catch (e) {
       if (kDebugMode) {
@@ -137,51 +148,14 @@ class NotificationService {
     required String targetType, // 'all', 'users', 'agents'
   }) async {
     try {
-      // Créer un document de notification dans Firestore
-      final notificationData = {
+      // Appeler la fonction Cloud pour envoyer la notification
+      await FirebaseFunctions.instance
+          .httpsCallable('sendAdminNotification')
+          .call({
         'title': title,
         'message': message,
         'targetType': targetType,
-        'sentAt': DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now()),
-        'timestamp': FieldValue.serverTimestamp(),
-        'status': 'sent',
-      };
-
-      // Enregistrer la notification dans Firestore
-      await _notificationsCollection.add(notificationData);
-
-      // Récupérer les tokens FCM des destinataires
-      List<String> tokens = [];
-
-      if (targetType == 'all' || targetType == 'users') {
-        final usersSnapshot = await _usersCollection.get();
-        for (var doc in usersSnapshot.docs) {
-          final userData = doc.data() as Map<String, dynamic>;
-          if (userData['fcmToken'] != null) {
-            tokens.add(userData['fcmToken']);
-          }
-        }
-      }
-
-      if (targetType == 'all' || targetType == 'agents') {
-        final agentsSnapshot = await _agentsCollection.get();
-        for (var doc in agentsSnapshot.docs) {
-          final agentData = doc.data() as Map<String, dynamic>;
-          if (agentData['fcmToken'] != null) {
-            tokens.add(agentData['fcmToken']);
-          }
-        }
-      }
-
-      // Envoyer la notification via Firebase Cloud Messaging
-      // Note: Dans une application réelle, cela serait fait via une fonction Cloud
-      // car les clés FCM ne doivent pas être exposées côté client
-      if (kDebugMode) {
-        logger.i('Envoi de notification à ${tokens.length} destinataires');
-      }
-
-      // Simuler l'envoi pour la démonstration
-      await Future.delayed(const Duration(seconds: 1));
+      });
 
     } catch (e) {
       if (kDebugMode) {
