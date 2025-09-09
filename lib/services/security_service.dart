@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logger/logger.dart';
-import '../utils/constants.dart';
 
 final logger = Logger();
 

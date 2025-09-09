@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../models/user_model.dart';
 import '../../models/data_deletion_model.dart';
-import '../../models/localization_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/data_deletion_service.dart';
 import '../../services/localization_service.dart';
 import '../../services/authorization_service.dart';
 import '../../widgets/admin_app_bar.dart';
 import '../../widgets/admin_drawer.dart';
-import '../../widgets/common_widgets.dart';
 
 class DataDeletionManagementScreen extends StatefulWidget {
   const DataDeletionManagementScreen({super.key});
@@ -502,6 +499,9 @@ class _DataDeletionManagementScreenState extends State<DataDeletionManagementScr
         backgroundColor = Colors.red[100]!;
         textColor = Colors.red[800]!;
         break;
+      case DeletionStatus.postponed:
+        // TODO: Handle this case.
+        throw UnimplementedError();
     }
     
     return Container(
@@ -592,6 +592,18 @@ class _DataDeletionManagementScreenState extends State<DataDeletionManagementScr
           ),
         );
         break;
+      case DeletionStatus.processing:
+        // TODO: Handle this case.
+        throw UnimplementedError();
+      case DeletionStatus.rejected:
+        // TODO: Handle this case.
+        throw UnimplementedError();
+      case DeletionStatus.postponed:
+        // TODO: Handle this case.
+        throw UnimplementedError();
+      case DeletionStatus.completed:
+        // TODO: Handle this case.
+        throw UnimplementedError();
     }
 
     return buttons;

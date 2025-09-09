@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 
 // Modèle pour la gestion des demandes de suppression de données (Droit à l'oubli RGPD)
 class DataDeletionRequestModel {

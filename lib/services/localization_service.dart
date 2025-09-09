@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import '../models/localization_model.dart';
-import '../models/user_model.dart';
 import 'auth_service.dart';
 import 'database_service.dart';
 import 'audit_service.dart';

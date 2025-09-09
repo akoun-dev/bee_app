@@ -7,7 +7,6 @@ import '../../services/localization_service.dart';
 import '../../services/authorization_service.dart';
 import '../../widgets/admin_app_bar.dart';
 import '../../widgets/admin_drawer.dart';
-import '../../widgets/common_widgets.dart';
 
 class LocalizationManagementScreen extends StatefulWidget {
   const LocalizationManagementScreen({super.key});

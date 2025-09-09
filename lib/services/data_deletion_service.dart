@@ -1,8 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/data_deletion_model.dart';
-import '../models/user_model.dart';
-import '../models/consent_model.dart';
 import '../models/reservation_model.dart';
 import '../models/review_model.dart';
 import 'auth_service.dart';

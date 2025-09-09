@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
-import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/permission_service.dart';
 import '../services/security_service.dart';

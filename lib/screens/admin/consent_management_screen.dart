@@ -143,7 +143,6 @@ class _ConsentManagementScreenState extends State<ConsentManagementScreen> {
       // Filtre de type
       if (_filterType != 'all') {
         final consent = _consents[user.uid];
-        if (consent == null) return false;
 
         switch (_filterType) {
           case 'all_granted':
@@ -164,7 +163,6 @@ class _ConsentManagementScreenState extends State<ConsentManagementScreen> {
       // Filtre par type de consentement spécifique
       if (_filterConsentType != null) {
         final consent = _consents[user.uid];
-        if (consent == null) return false;
 
         final typeKey = _filterConsentType!.key;
         if (!consent.hasConsent(typeKey)) return false;
@@ -702,23 +700,23 @@ class _ConsentManagementScreenState extends State<ConsentManagementScreen> {
                               ),
                             ],
                           ),
-                          if (consentData.description != null) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              consentData.description!,
-                              style: const TextStyle(fontSize: 12),
+                          ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            consentData.description!,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ],
+                          ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'But: ${consentData.purpose!}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontStyle: FontStyle.italic,
                             ),
-                          ],
-                          if (consentData.purpose != null) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              'But: ${consentData.purpose!}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          ],
+                          ),
+                        ],
                           if (consentData.grantedAt != null) ...[
                             const SizedBox(height: 4),
                             Text(

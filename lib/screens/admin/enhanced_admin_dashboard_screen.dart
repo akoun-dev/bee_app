@@ -5,9 +5,7 @@ import '../../models/user_model.dart';
 import '../../models/agent_model.dart';
 import '../../models/reservation_model.dart';
 import '../../models/audit_log_model.dart';
-import '../../models/consent_model.dart';
 import '../../models/data_deletion_model.dart';
-import '../../models/localization_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
 import '../../services/audit_service.dart';
@@ -17,7 +15,6 @@ import '../../services/localization_service.dart';
 import '../../services/authorization_service.dart';
 import '../../widgets/admin_app_bar.dart';
 import '../../widgets/admin_drawer.dart';
-import '../../widgets/common_widgets.dart';
 
 class EnhancedAdminDashboardScreen extends StatefulWidget {
   const EnhancedAdminDashboardScreen({super.key});
