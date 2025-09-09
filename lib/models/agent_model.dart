@@ -63,7 +63,9 @@ class AgentModel {
       averageRating: (map['averageRating'] ?? 0.0).toDouble(),
       ratingCount: map['ratingCount'] ?? 0,
       isAvailable: map['isAvailable'] ?? true,
-      createdAt: (map['createdAt'] as Timestamp).toDate(),
+      createdAt: (map['createdAt'] is Timestamp)
+          ? (map['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
       email: map['email'],
       phoneNumber: map['phoneNumber'],
       specialty: map['specialty'],
