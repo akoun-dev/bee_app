@@ -66,9 +66,12 @@ class UserBottomNavigation extends StatelessWidget {
     );
   }
 
-  // Gérer la navigation
+    // Gérer la navigation avec protection contre les navigations multiples
   void _onItemTapped(BuildContext context, int index) {
     if (index == currentIndex) return;
+
+    // Vérifier si le contexte est encore valide avant la navigation
+    if (!context.mounted) return;
 
     // Stocker la route à naviguer
     String route;
@@ -89,12 +92,22 @@ class UserBottomNavigation extends StatelessWidget {
         return;
     }
 
-    // Utiliser Future.microtask pour éviter les problèmes de navigation pendant le build
-    Future.microtask(() {
-      // Utiliser context.go() au lieu de context.push() pour éviter d'empiler les routes
-      // et permettre le retour arrière correct
-      context.go(route);
-    });
+    // Navigation directe avec vérification d'état
+    try {
+      // Utiliser WidgetsBinding.instance.addPostFrameCallback pour s'assurer que le frame est terminé
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          // Utiliser context.go() pour une navigation propre sans empiler les routes
+          context.go(route);
+        }
+      });
+    } catch (e) {
+      debugPrint('Erreur de navigation dans _onItemTapped: $e');
+      // En cas d'erreur, essayer une navigation plus simple
+      if (context.mounted) {
+        Navigator.pushReplacementNamed(context, route);
+      }
+    }
   }
 }
 

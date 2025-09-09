@@ -7,6 +7,8 @@ import '../../models/agent_model.dart';
 import '../../models/reservation_model.dart';
 import '../../models/user_model.dart';
 import '../../services/database_service.dart';
+import '../../services/agent_availability_service.dart';
+import '../../services/auth_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/theme.dart';
 import '../../widgets/common_widgets.dart';
@@ -35,14 +37,28 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
   bool _showActiveOnly = true; // Afficher uniquement les réservations en cours
   bool _showUpcomingOnly = false; // Afficher uniquement les réservations à venir
 
+  // Protection contre les actions multiples
+  bool _isProcessingAction = false;
+  DateTime? _lastActionTime;
+  final Set<String> _processingReservations = {};
+
   @override
   Widget build(BuildContext context) {
     final databaseService = Provider.of<DatabaseService>(context);
+    final availabilityService = Provider.of<AgentAvailabilityService>(context);
+    final authService = Provider.of<AuthService>(context);
 
     return Scaffold(
       appBar: AdminAppBar(
         title: 'Gestion des réservations',
         actions: [
+          // Bouton pour mettre à jour la disponibilité des agents
+          IconButton(
+            icon: const Icon(Icons.update),
+            onPressed: _updateAllAgentsAvailability,
+            tooltip: 'Mettre à jour la disponibilité',
+          ),
+          const SizedBox(width: 8),
           // Bouton pour les actions en masse
           if (_selectedReservations.isNotEmpty)
             IconButton(
@@ -595,6 +611,32 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
+                      // Bouton pour gérer la disponibilité de l'agent (admin seulement)
+                      FutureBuilder<UserModel?>(
+                        future: databaseService.getUser(authService.currentUser!.uid),
+                        builder: (context, userSnapshot) {
+                          final user = userSnapshot.data;
+                          final canModifyAvailability = user != null && 
+                              availabilityService.canModifyAgentAvailability(user);
+
+                          if (canModifyAvailability) {
+                            return IconButton(
+                              icon: Icon(
+                                agent?.isAvailable == true ? Icons.person_off : Icons.person,
+                                color: agent?.isAvailable == true ? Colors.red : Colors.green,
+                              ),
+                              onPressed: () => _showAgentAvailabilityDialog(agent!),
+                              tooltip: agent?.isAvailable == true 
+                                  ? 'Rendre indisponible' 
+                                  : 'Rendre disponible',
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+
+                      const SizedBox(width: 8),
+
                       // Bouton de détails
                       OutlinedButton.icon(
                         icon: const Icon(Icons.visibility),
@@ -831,10 +873,38 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
     context.go('/admin/reservation/${reservation.id}');
   }
 
-  // Approuver une réservation
+  // Approuver une réservation avec protection contre les actions multiples
   Future<void> _approveReservation(ReservationModel reservation) async {
+    // Vérifier si une action est déjà en cours
+    if (_isProcessingAction || _processingReservations.contains(reservation.id)) {
+      return;
+    }
+
+    // Vérifier si la dernière action était trop récente (protection contre les doubles clics)
+    final now = DateTime.now();
+    if (_lastActionTime != null && now.difference(_lastActionTime!) < const Duration(seconds: 1)) {
+      return;
+    }
+
+    setState(() {
+      _isProcessingAction = true;
+      _lastActionTime = now;
+      _processingReservations.add(reservation.id);
+    });
+
     try {
       final databaseService = Provider.of<DatabaseService>(context, listen: false);
+
+      // Vérifier que la réservation existe toujours
+      final currentReservation = await databaseService.getReservation(reservation.id);
+      if (currentReservation == null) {
+        throw Exception('Réservation introuvable');
+      }
+
+      // Vérifier que la réservation est bien en attente
+      if (currentReservation.status != ReservationModel.statusPending) {
+        throw Exception('La réservation n\'est plus en attente');
+      }
 
       // Mettre à jour le statut de la réservation
       final updatedReservation = reservation.approve();
@@ -845,6 +915,7 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
           const SnackBar(
             content: Text('Réservation approuvée avec succès'),
             backgroundColor: AppTheme.accentColor,
+            duration: Duration(seconds: 3),
           ),
         );
       }
@@ -854,8 +925,16 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
           SnackBar(
             content: Text('Erreur lors de l\'approbation: ${e.toString()}'),
             backgroundColor: AppTheme.errorColor,
+            duration: Duration(seconds: 5),
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessingAction = false;
+          _processingReservations.remove(reservation.id);
+        });
       }
     }
   }
@@ -909,35 +988,268 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
     );
   }
 
-  // Actions en masse
+  // Actions en masse avec protection contre les actions multiples
   Future<void> _bulkApprove() async {
+    // Vérifier si une action est déjà en cours
+    if (_isProcessingAction) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Une action est déjà en cours, veuillez patienter...'),
+          backgroundColor: AppTheme.mediumColor,
+        ),
+    );
+  }
+
+  // Mettre à jour la disponibilité de tous les agents
+  Future<void> _updateAllAgentsAvailability() async {
+    final availabilityService = Provider.of<AgentAvailabilityService>(context, listen: false);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Mise à jour de la disponibilité des agents en cours...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+
+    try {
+      await availabilityService.updateAgentsAvailability();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Disponibilité des agents mise à jour avec succès'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la mise à jour: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+    }
+  }
+
+  // Afficher le dialogue de disponibilité de l'agent
+  void _showAgentAvailabilityDialog(AgentModel agent) {
+    final availabilityService = Provider.of<AgentAvailabilityService>(context, listen: false);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Gérer la disponibilité'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                UserAvatar(
+                  imageUrl: agent.profileImageUrl,
+                  name: agent.fullName,
+                  size: 40,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        agent.fullName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Text(
+                        agent.profession,
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: agent.isAvailable ? Colors.green.withAlpha(25) : Colors.red.withAlpha(25),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: agent.isAvailable ? Colors.green : Colors.red,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    agent.isAvailable ? Icons.check_circle : Icons.cancel,
+                    color: agent.isAvailable ? Colors.green : Colors.red,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    agent.isAvailable ? 'Actuellement disponible' : 'Actuellement indisponible',
+                    style: TextStyle(
+                      color: agent.isAvailable ? Colors.green : Colors.red,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Que souhaitez-vous faire ?',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          if (agent.isAvailable)
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              onPressed: () async {
+                Navigator.pop(context);
+                try {
+                  await availabilityService.setAgentManuallyUnavailable(
+                    agent.id,
+                    'Modification manuelle par administrateur depuis la gestion des réservations',
+                  );
+
+                  // Mettre à jour le cache local
+                  _agentsCache[agent.id] = agent.copyWith(isAvailable: false);
+
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${agent.fullName} est maintenant indisponible'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Erreur: ${e.toString()}'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Rendre indisponible'),
+            )
+          else
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+              ),
+              onPressed: () async {
+                Navigator.pop(context);
+                try {
+                  await availabilityService.setAgentManuallyAvailable(
+                    agent.id,
+                    'Modification manuelle par administrateur depuis la gestion des réservations',
+                  );
+
+                  // Mettre à jour le cache local
+                  _agentsCache[agent.id] = agent.copyWith(isAvailable: true);
+
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${agent.fullName} est maintenant disponible'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Erreur: ${e.toString()}'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Rendre disponible'),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+    setState(() {
+      _isProcessingAction = true;
+      _lastActionTime = DateTime.now();
+    });
+
     final databaseService = Provider.of<DatabaseService>(context, listen: false);
     int count = 0;
+    int errorCount = 0;
+    List<String> errorMessages = [];
 
     try {
       // Pour chaque ID de réservation sélectionné
       for (final reservationId in _selectedReservations) {
-        // Récupérer la réservation
-        final reservation = await databaseService.getReservation(reservationId);
+        try {
+          // Récupérer la réservation
+          final reservation = await databaseService.getReservation(reservationId);
 
-        // Si la réservation existe et est en attente
-        if (reservation != null && reservation.status == ReservationModel.statusPending) {
-          // Approuver la réservation
-          final updatedReservation = reservation.approve();
-          await databaseService.updateReservation(updatedReservation);
-          count++;
+          // Si la réservation existe et est en attente
+          if (reservation != null && reservation.status == ReservationModel.statusPending) {
+            // Approuver la réservation
+            final updatedReservation = reservation.approve();
+            await databaseService.updateReservation(updatedReservation);
+            count++;
+          }
+        } catch (e) {
+          errorCount++;
+          errorMessages.add('Erreur avec $reservationId: ${e.toString()}');
+          debugPrint('Erreur lors de l\'approbation de $reservationId: $e');
         }
       }
 
       if (mounted) {
+        String message = '$count réservations approuvées avec succès';
+        if (errorCount > 0) {
+          message += ', $errorCount erreurs';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$count réservations approuvées avec succès'),
-            backgroundColor: AppTheme.accentColor,
+            content: Text(message),
+            backgroundColor: errorCount > 0 ? AppTheme.errorColor : AppTheme.accentColor,
+            duration: Duration(seconds: errorCount > 0 ? 5 : 3),
           ),
         );
-        // Effacer les sélections
-        setState(() => _selectedReservations.clear());
+
+        // Effacer les sélections seulement si tout s'est bien passé
+        if (errorCount == 0) {
+          setState(() => _selectedReservations.clear());
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -945,40 +1257,78 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
           SnackBar(
             content: Text('Erreur lors de l\'approbation en masse: ${e.toString()}'),
             backgroundColor: AppTheme.errorColor,
+            duration: Duration(seconds: 5),
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessingAction = false;
+        });
       }
     }
   }
 
   Future<void> _bulkReject() async {
+    // Vérifier si une action est déjà en cours
+    if (_isProcessingAction) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Une action est déjà en cours, veuillez patienter...'),
+          backgroundColor: AppTheme.mediumColor,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isProcessingAction = true;
+      _lastActionTime = DateTime.now();
+    });
+
     final databaseService = Provider.of<DatabaseService>(context, listen: false);
     int count = 0;
+    int errorCount = 0;
 
     try {
       // Pour chaque ID de réservation sélectionné
       for (final reservationId in _selectedReservations) {
-        // Récupérer la réservation
-        final reservation = await databaseService.getReservation(reservationId);
+        try {
+          // Récupérer la réservation
+          final reservation = await databaseService.getReservation(reservationId);
 
-        // Si la réservation existe et est en attente
-        if (reservation != null && reservation.status == ReservationModel.statusPending) {
-          // Rejeter la réservation
-          final updatedReservation = reservation.reject();
-          await databaseService.updateReservation(updatedReservation);
-          count++;
+          // Si la réservation existe et est en attente
+          if (reservation != null && reservation.status == ReservationModel.statusPending) {
+            // Rejeter la réservation
+            final updatedReservation = reservation.reject();
+            await databaseService.updateReservation(updatedReservation);
+            count++;
+          }
+        } catch (e) {
+          errorCount++;
+          debugPrint('Erreur lors du rejet de $reservationId: $e');
         }
       }
 
       if (mounted) {
+        String message = '$count réservations rejetées avec succès';
+        if (errorCount > 0) {
+          message += ', $errorCount erreurs';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$count réservations rejetées avec succès'),
-            backgroundColor: AppTheme.accentColor,
+            content: Text(message),
+            backgroundColor: errorCount > 0 ? AppTheme.errorColor : AppTheme.accentColor,
+            duration: Duration(seconds: errorCount > 0 ? 5 : 3),
           ),
         );
-        // Effacer les sélections
-        setState(() => _selectedReservations.clear());
+
+        // Effacer les sélections seulement si tout s'est bien passé
+        if (errorCount == 0) {
+          setState(() => _selectedReservations.clear());
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -986,19 +1336,37 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
           SnackBar(
             content: Text('Erreur lors du rejet en masse: ${e.toString()}'),
             backgroundColor: AppTheme.errorColor,
+            duration: Duration(seconds: 5),
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessingAction = false;
+        });
       }
     }
   }
 
   Future<void> _bulkDelete() async {
+    // Vérifier si une action est déjà en cours
+    if (_isProcessingAction) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Une action est déjà en cours, veuillez patienter...'),
+          backgroundColor: AppTheme.mediumColor,
+        ),
+      );
+      return;
+    }
+
     // Afficher une boîte de dialogue de confirmation
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Confirmation'),
-        content: Text('Êtes-vous sûr de vouloir supprimer ${_selectedReservations.length} réservations ?'),
+        content: Text('Êtes-vous sûr de vouloir annuler ${_selectedReservations.length} réservations ?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -1009,7 +1377,7 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.errorColor,
             ),
-            child: const Text('Supprimer'),
+            child: const Text('Annuler'),
           ),
         ],
       ),
@@ -1019,33 +1387,53 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
 
     if (!mounted) return;
 
+    setState(() {
+      _isProcessingAction = true;
+      _lastActionTime = DateTime.now();
+    });
+
     final databaseService = Provider.of<DatabaseService>(context, listen: false);
     int count = 0;
+    int errorCount = 0;
 
     try {
       // Pour chaque ID de réservation sélectionné
       for (final reservationId in _selectedReservations) {
-        // Récupérer la réservation
-        final reservation = await databaseService.getReservation(reservationId);
+        try {
+          // Récupérer la réservation
+          final reservation = await databaseService.getReservation(reservationId);
 
-        // Si la réservation existe
-        if (reservation != null) {
-          // Mettre à jour le statut à "annulé" (nous n'avons pas de méthode de suppression)
-          final updatedReservation = reservation.cancel();
-          await databaseService.updateReservation(updatedReservation);
-          count++;
+          // Si la réservation existe
+          if (reservation != null) {
+            // Mettre à jour le statut à "annulé"
+            final updatedReservation = reservation.cancel();
+            await databaseService.updateReservation(updatedReservation);
+            count++;
+          }
+        } catch (e) {
+          errorCount++;
+          debugPrint('Erreur lors de l\'annulation de $reservationId: $e');
         }
       }
 
       if (mounted) {
+        String message = '$count réservations annulées avec succès';
+        if (errorCount > 0) {
+          message += ', $errorCount erreurs';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$count réservations annulées avec succès'),
-            backgroundColor: AppTheme.accentColor,
+            content: Text(message),
+            backgroundColor: errorCount > 0 ? AppTheme.errorColor : AppTheme.accentColor,
+            duration: Duration(seconds: errorCount > 0 ? 5 : 3),
           ),
         );
-        // Effacer les sélections
-        setState(() => _selectedReservations.clear());
+
+        // Effacer les sélections seulement si tout s'est bien passé
+        if (errorCount == 0) {
+          setState(() => _selectedReservations.clear());
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -1053,8 +1441,15 @@ class _EnhancedReservationsScreenState extends State<EnhancedReservationsScreen>
           SnackBar(
             content: Text('Erreur lors de l\'annulation en masse: ${e.toString()}'),
             backgroundColor: AppTheme.errorColor,
+            duration: Duration(seconds: 5),
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessingAction = false;
+        });
       }
     }
   }

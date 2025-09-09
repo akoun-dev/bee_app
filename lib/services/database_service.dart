@@ -3,9 +3,14 @@ import '../models/agent_model.dart';
 import '../models/reservation_model.dart';
 import '../models/review_model.dart';
 import '../models/user_model.dart';
+import 'agent_availability_service.dart';
 
-// Service pour gérer les opérations de base de données Firestore
+// Service pour gérer les opérations de base de données Firestore avec gestion améliorée des erreurs et timeouts
 class DatabaseService {
+  final AgentAvailabilityService _availabilityService;
+  // Timeout par défaut pour les opérations Firestore
+  static const Duration _defaultTimeout = Duration(seconds: 10);
+  
   // Nous n'utilisons pas directement _firestore, mais nous utilisons les références de collection
 
   // Collections
@@ -18,22 +23,57 @@ class DatabaseService {
   final CollectionReference _reviewsCollection = FirebaseFirestore.instance
       .collection('reviews');
 
+  // Constructeur avec injection de dépendances
+  DatabaseService(this._availabilityService);
+
+  // Constructeur pour les tests ou utilisation sans service de disponibilité
+  DatabaseService.withoutAvailability() : _availabilityService = AgentAvailabilityService(
+    this,
+    FirebaseFirestore.instance,
+  );
+
   // ===== UTILISATEURS =====
 
-  // Récupérer un utilisateur par ID
+  // Récupérer un utilisateur par ID avec timeout et gestion d'erreur améliorée
   Future<UserModel?> getUser(String userId) async {
     try {
-      final docSnapshot = await _usersCollection.doc(userId).get();
-      if (!docSnapshot.exists) return null;
+      // Ajouter un timeout pour éviter les opérations bloquantes
+      final docSnapshot = await _usersCollection.doc(userId).get().timeout(_defaultTimeout);
+      
+      if (!docSnapshot.exists) {
+        debugPrint('Utilisateur non trouvé avec ID: $userId');
+        return null;
+      }
 
-      return UserModel.fromMap(
-        docSnapshot.data() as Map<String, dynamic>,
-        docSnapshot.id,
-      );
+      final userData = docSnapshot.data() as Map<String, dynamic>;
+      
+      // Valider les données essentielles
+      if (userData['uid'] == null || userData['email'] == null) {
+        debugPrint('Données utilisateur invalides pour ID: $userId');
+        return null;
+      }
+
+      return UserModel.fromMap(userData, docSnapshot.id);
+    } on TimeoutException {
+      debugPrint('Timeout lors de la récupération de l\'utilisateur: $userId');
+      throw Exception('Le serveur met trop de temps à répondre. Veuillez réessayer.');
+    } on FirebaseException catch (e) {
+      debugPrint('Erreur Firebase lors de la récupération de l\'utilisateur: ${e.code} - ${e.message}');
+      
+      // Gérer les erreurs spécifiques de Firebase
+      switch (e.code) {
+        case 'permission-denied':
+          throw Exception('Vous n\'avez pas la permission d\'accéder à ces données.');
+        case 'not-found':
+          return null; // L'utilisateur n'existe pas, ce n'est pas une erreur
+        case 'unavailable':
+          throw Exception('Le service est temporairement indisponible. Veuillez réessayer plus tard.');
+        default:
+          throw Exception('Erreur de base de données: ${e.message ?? 'Erreur inconnue'}');
+      }
     } catch (e) {
-      // Utiliser un logger en production au lieu de print
-      // Logger.error('Erreur lors de la récupération de l\'utilisateur: ${e.toString()}');
-      return null;
+      debugPrint('Erreur inattendue lors de la récupération de l\'utilisateur: $e');
+      throw Exception('Une erreur inattendue s\'est produite. Veuillez réessayer.');
     }
   }
 
@@ -238,20 +278,46 @@ class DatabaseService {
     }
   }
 
-  // Récupérer un agent par ID
+  // Récupérer un agent par ID avec timeout et gestion d'erreur améliorée
   Future<AgentModel?> getAgent(String agentId) async {
     try {
-      final docSnapshot = await _agentsCollection.doc(agentId).get();
-      if (!docSnapshot.exists) return null;
+      // Ajouter un timeout pour éviter les opérations bloquantes
+      final docSnapshot = await _agentsCollection.doc(agentId).get().timeout(_defaultTimeout);
+      
+      if (!docSnapshot.exists) {
+        debugPrint('Agent non trouvé avec ID: $agentId');
+        return null;
+      }
 
-      return AgentModel.fromMap(
-        docSnapshot.data() as Map<String, dynamic>,
-        docSnapshot.id,
-      );
+      final agentData = docSnapshot.data() as Map<String, dynamic>;
+      
+      // Valider les données essentielles
+      if (agentData['fullName'] == null || agentData['profession'] == null) {
+        debugPrint('Données agent invalides pour ID: $agentId');
+        return null;
+      }
+
+      return AgentModel.fromMap(agentData, docSnapshot.id);
+    } on TimeoutException {
+      debugPrint('Timeout lors de la récupération de l\'agent: $agentId');
+      throw Exception('Le serveur met trop de temps à répondre. Veuillez réessayer.');
+    } on FirebaseException catch (e) {
+      debugPrint('Erreur Firebase lors de la récupération de l\'agent: ${e.code} - ${e.message}');
+      
+      // Gérer les erreurs spécifiques de Firebase
+      switch (e.code) {
+        case 'permission-denied':
+          throw Exception('Vous n\'avez pas la permission d\'accéder à ces données.');
+        case 'not-found':
+          return null; // L'agent n'existe pas, ce n'est pas une erreur
+        case 'unavailable':
+          throw Exception('Le service est temporairement indisponible. Veuillez réessayer plus tard.');
+        default:
+          throw Exception('Erreur de base de données: ${e.message ?? 'Erreur inconnue'}');
+      }
     } catch (e) {
-      // Utiliser un logger en production au lieu de print
-      // Logger.error('Erreur lors de la récupération de l\'agent: ${e.toString()}');
-      return null;
+      debugPrint('Erreur inattendue lors de la récupération de l\'agent: $e');
+      throw Exception('Une erreur inattendue s\'est produite. Veuillez réessayer.');
     }
   }
 
@@ -474,46 +540,157 @@ class DatabaseService {
     }
   }
 
-  // Récupérer une réservation par ID
+  // Récupérer une réservation par ID avec timeout et gestion d'erreur améliorée
   Future<ReservationModel?> getReservation(String reservationId) async {
     try {
-      final docSnapshot =
-          await _reservationsCollection.doc(reservationId).get();
-      if (!docSnapshot.exists) return null;
+      // Ajouter un timeout pour éviter les opérations bloquantes
+      final docSnapshot = await _reservationsCollection.doc(reservationId).get().timeout(_defaultTimeout);
+      
+      if (!docSnapshot.exists) {
+        debugPrint('Réservation non trouvée avec ID: $reservationId');
+        return null;
+      }
 
-      return ReservationModel.fromMap(
-        docSnapshot.data() as Map<String, dynamic>,
-        docSnapshot.id,
-      );
+      final reservationData = docSnapshot.data() as Map<String, dynamic>;
+      
+      // Valider les données essentielles
+      if (reservationData['userId'] == null || reservationData['agentId'] == null) {
+        debugPrint('Données de réservation invalides pour ID: $reservationId');
+        return null;
+      }
+
+      return ReservationModel.fromMap(reservationData, docSnapshot.id);
+    } on TimeoutException {
+      debugPrint('Timeout lors de la récupération de la réservation: $reservationId');
+      throw Exception('Le serveur met trop de temps à répondre. Veuillez réessayer.');
+    } on FirebaseException catch (e) {
+      debugPrint('Erreur Firebase lors de la récupération de la réservation: ${e.code} - ${e.message}');
+      
+      // Gérer les erreurs spécifiques de Firebase
+      switch (e.code) {
+        case 'permission-denied':
+          throw Exception('Vous n\'avez pas la permission d\'accéder à ces données.');
+        case 'not-found':
+          return null; // La réservation n'existe pas, ce n'est pas une erreur
+        case 'unavailable':
+          throw Exception('Le service est temporairement indisponible. Veuillez réessayer plus tard.');
+        default:
+          throw Exception('Erreur de base de données: ${e.message ?? 'Erreur inconnue'}');
+      }
     } catch (e) {
-      // Utiliser un logger en production au lieu de print
-      // Logger.error('Erreur lors de la récupération de la réservation: ${e.toString()}');
-      return null;
+      debugPrint('Erreur inattendue lors de la récupération de la réservation: $e');
+      throw Exception('Une erreur inattendue s\'est produite. Veuillez réessayer.');
     }
   }
 
-  // Ajouter une nouvelle réservation
+  // Ajouter une nouvelle réservation avec timeout et gestion d'erreur améliorée
   Future<String> addReservation(ReservationModel reservation) async {
     try {
-      final docRef = await _reservationsCollection.add(reservation.toMap());
+      // Valider les données avant l'ajout
+      if (reservation.userId.isEmpty || reservation.agentId.isEmpty) {
+        throw Exception('Les données de la réservation sont incomplètes.');
+      }
+
+      if (reservation.startDate.isAfter(reservation.endDate)) {
+        throw Exception('La date de début doit être avant la date de fin.');
+      }
+
+      // Ajouter un timeout pour éviter les opérations bloquantes
+      final docRef = await _reservationsCollection.add(reservation.toMap()).timeout(_defaultTimeout);
+      
+      debugPrint('Réservation ajoutée avec succès: ${docRef.id}');
+
+      // Mettre à jour la disponibilité de l'agent après l'ajout de la réservation
+      try {
+        await _availabilityService.updateAgentAvailability(reservation.agentId);
+        debugPrint('Disponibilité de l\'agent ${reservation.agentId} mise à jour après ajout de réservation');
+      } catch (availabilityError) {
+        debugPrint('Erreur lors de la mise à jour de la disponibilité de l\'agent: $availabilityError');
+        // Ne pas bloquer l'opération principale si la mise à jour de disponibilité échoue
+      }
+
       return docRef.id;
+    } on TimeoutException {
+      debugPrint('Timeout lors de l\'ajout de la réservation');
+      throw Exception('Le serveur met trop de temps à répondre. Veuillez réessayer.');
+    } on FirebaseException catch (e) {
+      debugPrint('Erreur Firebase lors de l\'ajout de la réservation: ${e.code} - ${e.message}');
+      
+      // Gérer les erreurs spécifiques de Firebase
+      switch (e.code) {
+        case 'permission-denied':
+          throw Exception('Vous n\'avez pas la permission d\'ajouter des réservations.');
+        case 'unavailable':
+          throw Exception('Le service est temporairement indisponible. Veuillez réessayer plus tard.');
+        case 'invalid-argument':
+          throw Exception('Les données de la réservation sont invalides.');
+        default:
+          throw Exception('Erreur lors de l\'ajout de la réservation: ${e.message ?? 'Erreur inconnue'}');
+      }
     } catch (e) {
-      throw Exception(
-        'Erreur lors de l\'ajout de la réservation: ${e.toString()}',
-      );
+      debugPrint('Erreur inattendue lors de l\'ajout de la réservation: $e');
+      if (e is Exception) {
+        rethrow;
+      }
+      throw Exception('Une erreur inattendue s\'est produite lors de l\'ajout de la réservation.');
     }
   }
 
-  // Mettre à jour une réservation
+  // Mettre à jour une réservation avec timeout et gestion d'erreur améliorée
   Future<void> updateReservation(ReservationModel reservation) async {
     try {
+      // Valider les données avant la mise à jour
+      if (reservation.id.isEmpty) {
+        throw Exception('L\'ID de la réservation est requis pour la mise à jour.');
+      }
+
+      // Vérifier que la réservation existe avant de la mettre à jour
+      final existingReservation = await getReservation(reservation.id);
+      if (existingReservation == null) {
+        throw Exception('La réservation à mettre à jour n\'existe pas.');
+      }
+
+      // Ajouter un timeout pour éviter les opérations bloquantes
       await _reservationsCollection
           .doc(reservation.id)
-          .update(reservation.toMap());
+          .update(reservation.toMap())
+          .timeout(_defaultTimeout);
+      
+      debugPrint('Réservation mise à jour avec succès: ${reservation.id}');
+
+      // Mettre à jour la disponibilité de l'agent après la mise à jour de la réservation
+      try {
+        await _availabilityService.updateAgentAvailability(reservation.agentId);
+        debugPrint('Disponibilité de l\'agent ${reservation.agentId} mise à jour après modification de réservation');
+      } catch (availabilityError) {
+        debugPrint('Erreur lors de la mise à jour de la disponibilité de l\'agent: $availabilityError');
+        // Ne pas bloquer l'opération principale si la mise à jour de disponibilité échoue
+      }
+    } on TimeoutException {
+      debugPrint('Timeout lors de la mise à jour de la réservation: ${reservation.id}');
+      throw Exception('Le serveur met trop de temps à répondre. Veuillez réessayer.');
+    } on FirebaseException catch (e) {
+      debugPrint('Erreur Firebase lors de la mise à jour de la réservation: ${e.code} - ${e.message}');
+      
+      // Gérer les erreurs spécifiques de Firebase
+      switch (e.code) {
+        case 'permission-denied':
+          throw Exception('Vous n\'avez pas la permission de modifier les réservations.');
+        case 'not-found':
+          throw Exception('La réservation à modifier n\'existe pas.');
+        case 'unavailable':
+          throw Exception('Le service est temporairement indisponible. Veuillez réessayer plus tard.');
+        case 'invalid-argument':
+          throw Exception('Les données de la réservation sont invalides.');
+        default:
+          throw Exception('Erreur lors de la mise à jour de la réservation: ${e.message ?? 'Erreur inconnue'}');
+      }
     } catch (e) {
-      throw Exception(
-        'Erreur lors de la mise à jour de la réservation: ${e.toString()}',
-      );
+      debugPrint('Erreur inattendue lors de la mise à jour de la réservation: $e');
+      if (e is Exception) {
+        rethrow;
+      }
+      throw Exception('Une erreur inattendue s\'est produite lors de la mise à jour de la réservation.');
     }
   }
 

@@ -6,12 +6,13 @@ import '../utils/theme.dart';
 
 // Widgets communs réutilisables dans l'application
 
-// Bouton principal
-class PrimaryButton extends StatelessWidget {
+// Bouton principal avec protection contre les doubles clics et meilleur feedback
+class PrimaryButton extends StatefulWidget {
   final String text;
   final VoidCallback onPressed;
   final bool isLoading;
   final bool isFullWidth;
+  final Duration? debounceDuration;
 
   const PrimaryButton({
     super.key,
@@ -19,17 +20,72 @@ class PrimaryButton extends StatelessWidget {
     required this.onPressed,
     this.isLoading = false,
     this.isFullWidth = true,
+    this.debounceDuration,
   });
+
+  @override
+  State<PrimaryButton> createState() => _PrimaryButtonState();
+}
+
+class _PrimaryButtonState extends State<PrimaryButton> {
+  bool _isPressed = false;
+  DateTime? _lastPressedTime;
+  Timer? _debounceTimer;
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+
+  void _handlePressed() {
+    if (widget.isLoading) return;
+
+    final now = DateTime.now();
+    final debounceDuration = widget.debounceDuration ?? const Duration(milliseconds: 500);
+    
+    // Vérifier si le bouton a été pressé récemment (protection contre les doubles clics)
+    if (_lastPressedTime != null && 
+        now.difference(_lastPressedTime!) < debounceDuration) {
+      return;
+    }
+
+    // Annuler le timer précédent s'il existe
+    _debounceTimer?.cancel();
+
+    // Définir le nouveau timer
+    _debounceTimer = Timer(debounceDuration, () {
+      _debounceTimer = null;
+    });
+
+    _lastPressedTime = now;
+    
+    try {
+      widget.onPressed();
+    } catch (e) {
+      // Gérer les erreurs silencieusement pour ne pas casser l'UI
+      debugPrint('Erreur dans PrimaryButton onPressed: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: isFullWidth ? double.infinity : null,
-      child: ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
-        child:
-            isLoading
-                ? const SizedBox(
+      width: widget.isFullWidth ? double.infinity : null,
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 100),
+        scale: _isPressed ? 0.95 : 1.0,
+        child: ElevatedButton(
+          onPressed: widget.isLoading ? null : _handlePressed,
+          style: ElevatedButton.styleFrom(
+            elevation: _isPressed ? 2 : 4,
+            shadowColor: Colors.black.withAlpha(77),
+          ),
+          onHover: (isHovered) {
+            // Feedback visuel au survol
+          },
+          child: widget.isLoading
+              ? const SizedBox(
                   height: 20,
                   width: 20,
                   child: CircularProgressIndicator(
@@ -37,30 +93,102 @@ class PrimaryButton extends StatelessWidget {
                     strokeWidth: 2,
                   ),
                 )
-                : Text(text),
+              : Text(
+                  widget.text,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+        ),
       ),
     );
   }
 }
 
-// Bouton secondaire
-class SecondaryButton extends StatelessWidget {
+// Bouton secondaire avec protection contre les doubles clics et meilleur feedback
+class SecondaryButton extends StatefulWidget {
   final String text;
   final VoidCallback onPressed;
   final bool isFullWidth;
+  final Duration? debounceDuration;
 
   const SecondaryButton({
     super.key,
     required this.text,
     required this.onPressed,
     this.isFullWidth = true,
+    this.debounceDuration,
   });
+
+  @override
+  State<SecondaryButton> createState() => _SecondaryButtonState();
+}
+
+class _SecondaryButtonState extends State<SecondaryButton> {
+  bool _isPressed = false;
+  DateTime? _lastPressedTime;
+  Timer? _debounceTimer;
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+
+  void _handlePressed() {
+    final now = DateTime.now();
+    final debounceDuration = widget.debounceDuration ?? const Duration(milliseconds: 500);
+    
+    // Vérifier si le bouton a été pressé récemment (protection contre les doubles clics)
+    if (_lastPressedTime != null && 
+        now.difference(_lastPressedTime!) < debounceDuration) {
+      return;
+    }
+
+    // Annuler le timer précédent s'il existe
+    _debounceTimer?.cancel();
+
+    // Définir le nouveau timer
+    _debounceTimer = Timer(debounceDuration, () {
+      _debounceTimer = null;
+    });
+
+    _lastPressedTime = now;
+    
+    try {
+      widget.onPressed();
+    } catch (e) {
+      // Gérer les erreurs silencieusement pour ne pas casser l'UI
+      debugPrint('Erreur dans SecondaryButton onPressed: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: isFullWidth ? double.infinity : null,
-      child: OutlinedButton(onPressed: onPressed, child: Text(text)),
+      width: widget.isFullWidth ? double.infinity : null,
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 100),
+        scale: _isPressed ? 0.95 : 1.0,
+        child: OutlinedButton(
+          onPressed: _handlePressed,
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(
+              color: Theme.of(context).primaryColor,
+              width: 1.5,
+            ),
+          ),
+          child: Text(
+            widget.text,
+            style: TextStyle(
+              color: Theme.of(context).primaryColor,
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

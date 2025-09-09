@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../models/agent_model.dart';
 import '../../models/reservation_model.dart';
+import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
+import '../../services/agent_availability_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/theme.dart';
 import '../../widgets/common_widgets.dart';
@@ -39,6 +41,10 @@ class _ReservationScreenState extends State<ReservationScreen> {
   DateTime _startDate = DateTime.now().add(const Duration(days: 1));
   DateTime _endDate = DateTime.now().add(const Duration(days: 2));
 
+  // Protection contre les soumissions multiples
+  DateTime? _lastSubmissionTime;
+  bool _isFormValid = false;
+
   @override
   void initState() {
     super.initState();
@@ -52,7 +58,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
     super.dispose();
   }
 
-  // Charger les détails de l'agent
+  // Charger les détails de l'agent avec vérification des permissions
   Future<void> _loadAgentDetails() async {
     setState(() {
       _isLoading = true;
@@ -60,8 +66,32 @@ class _ReservationScreenState extends State<ReservationScreen> {
     });
 
     try {
+      final authService = Provider.of<AuthService>(context, listen: false);
       final databaseService = Provider.of<DatabaseService>(context, listen: false);
+      final availabilityService = Provider.of<AgentAvailabilityService>(context, listen: false);
+
+      final currentUser = authService.currentUser;
+      if (currentUser == null) {
+        throw Exception('Vous devez être connecté pour effectuer une réservation');
+      }
+
+      // Récupérer le profil utilisateur complet
+      final userProfile = await databaseService.getUser(currentUser.uid);
+      if (userProfile == null) {
+        throw Exception('Profil utilisateur introuvable. Veuillez vous reconnecter.');
+      }
+
+      // Récupérer l'agent
       final agent = await databaseService.getAgent(widget.agentId);
+      if (agent == null) {
+        throw Exception('Agent introuvable');
+      }
+
+      // Vérifier les permissions de réservation
+      final canReserve = await availabilityService.canReserveAgent(userProfile, widget.agentId);
+      if (!canReserve) {
+        throw Exception('Cet agent n\'est pas disponible pour le moment ou vous n\'avez pas la permission de le réserver.');
+      }
 
       if (mounted) {
         setState(() {
@@ -115,14 +145,64 @@ class _ReservationScreenState extends State<ReservationScreen> {
     }
   }
 
-  // Soumettre la réservation
+  // Soumettre la réservation avec protection contre les soumissions multiples
   Future<void> _submitReservation() async {
+    // Vérifier si le widget est encore monté
+    if (!mounted) return;
+
+    // Protection contre les soumissions multiples
+    final now = DateTime.now();
+    if (_lastSubmissionTime != null && 
+        now.difference(_lastSubmissionTime!) < const Duration(seconds: 2)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez patienter avant de soumettre à nouveau...'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
     // Valider le formulaire
     if (!_formKey.currentState!.validate()) return;
+
+    // Vérifier que toutes les informations nécessaires sont présentes
+    if (_agent == null) {
+      setState(() {
+        _errorMessage = 'Agent introuvable';
+      });
+      return;
+    }
+
+    // Vérifier que l'agent est disponible
+    if (!_agent!.isAvailable) {
+      setState(() {
+        _errorMessage = 'Cet agent n\'est pas disponible pour le moment';
+      });
+      return;
+    }
+
+    // Vérifier que les dates sont valides
+    if (_startDate.isAfter(_endDate)) {
+      setState(() {
+        _errorMessage = 'La date de début doit être avant la date de fin';
+      });
+      return;
+    }
+
+    // Vérifier que la durée minimale est respectée (1 jour)
+    if (_endDate.difference(_startDate).inDays < 1) {
+      setState(() {
+        _errorMessage = 'La réservation doit durer au moins 1 jour';
+      });
+      return;
+    }
 
     setState(() {
       _isSubmitting = true;
       _errorMessage = null;
+      _lastSubmissionTime = now;
     });
 
     try {
@@ -132,6 +212,12 @@ class _ReservationScreenState extends State<ReservationScreen> {
       final currentUser = authService.currentUser;
       if (currentUser == null) {
         throw Exception('Vous devez être connecté pour effectuer une réservation');
+      }
+
+      // Vérifier que l'utilisateur a un profil complet
+      final userProfile = await databaseService.getUser(currentUser.uid);
+      if (userProfile == null) {
+        throw Exception('Profil utilisateur incomplet. Veuillez compléter votre profil.');
       }
 
       // Créer la réservation
@@ -147,23 +233,50 @@ class _ReservationScreenState extends State<ReservationScreen> {
         createdAt: DateTime.now(),
       );
 
+      // Ajouter un délai pour simuler le traitement et éviter les doubles soumissions
+      await Future.delayed(const Duration(milliseconds: 500));
+
       // Ajouter la réservation à la base de données
-      await databaseService.addReservation(reservation);
+      final reservationId = await databaseService.addReservation(reservation);
 
       if (mounted) {
         // Afficher un message de succès et rediriger
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(AppConstants.successReservation),
             backgroundColor: AppTheme.accentColor,
+            duration: const Duration(seconds: 3),
           ),
         );
-        context.go('/history');
+
+        // Rediriger vers l'historique avec un petit délai pour laisser le temps à l'utilisateur de voir le message
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) {
+            context.go('/history');
+          }
+        });
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-      });
+      // Extraire le message d'erreur plus proprement
+      String errorMessage = e.toString();
+      if (errorMessage.startsWith('Exception: ')) {
+        errorMessage = errorMessage.substring('Exception: '.length);
+      }
+
+      if (mounted) {
+        setState(() {
+          _errorMessage = errorMessage;
+        });
+
+        // Afficher un message d'erreur plus visible
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: $errorMessage'),
+            backgroundColor: AppTheme.errorColor,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -175,6 +288,9 @@ class _ReservationScreenState extends State<ReservationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final availabilityService = Provider.of<AgentAvailabilityService>(context, listen: false);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppConstants.reservationTitle),
@@ -185,6 +301,46 @@ class _ReservationScreenState extends State<ReservationScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          // Afficher les actions admin si l'utilisateur est admin
+          if (authService.currentUser != null) ...[
+            FutureBuilder<UserModel?>(
+              future: Provider.of<DatabaseService>(context, listen: false)
+                  .getUser(authService.currentUser!.uid),
+              builder: (context, snapshot) {
+                final user = snapshot.data;
+                if (user != null && availabilityService.canModifyAgentAvailability(user)) {
+                  return PopupMenuButton<String>(
+                    onSelected: (value) => _handleAdminAction(value),
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'toggle_availability',
+                        child: Row(
+                          children: [
+                            Icon(Icons.sync),
+                            SizedBox(width: 8),
+                            Text('Forcer disponibilité'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'view_logs',
+                        child: Row(
+                          children: [
+                            Icon(Icons.history),
+                            SizedBox(width: 8),
+                            Text('Voir les logs'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ],
+        ],
       ),
       body: _isLoading
           ? const LoadingIndicator(message: 'Chargement des informations...')
@@ -202,106 +358,194 @@ class _ReservationScreenState extends State<ReservationScreen> {
   Widget _buildReservationForm() {
     final dateFormat = DateFormat(AppConstants.dateFormat);
     final duration = _endDate.difference(_startDate).inDays + 1;
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final availabilityService = Provider.of<AgentAvailabilityService>(context, listen: false);
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // En-tête avec informations sur l'agent
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withAlpha(15),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
-              ),
-            ),
-            child: Column(
-              children: [
-                // Avatar et informations de l'agent
-                Row(
+    return FutureBuilder<UserModel?>(
+      future: Provider.of<DatabaseService>(context, listen: false)
+          .getUser(authService.currentUser!.uid),
+      builder: (context, userSnapshot) {
+        final user = userSnapshot.data;
+        final canViewUnavailable = user != null && availabilityService.canViewUnavailableAgents(user);
+
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // En-tête avec informations sur l'agent
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withAlpha(15),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(24),
+                    bottomRight: Radius.circular(24),
+                  ),
+                ),
+                child: Column(
                   children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 3,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(40),
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                      child: UserAvatar(
-                        imageUrl: _agent!.profileImageUrl,
-                        name: _agent!.fullName,
-                        size: 70,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _agent!.fullName,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20,
+                    // Avatar et informations de l'agent
+                    Row(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 3,
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _agent!.profession,
-                            style: TextStyle(
-                              color: Colors.grey[700],
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              RatingDisplay(
-                                rating: _agent!.averageRating,
-                                ratingCount: _agent!.ratingCount,
-                              ),
-                              const Spacer(),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: _agent!.isAvailable
-                                      ? Colors.green.withAlpha(30)
-                                      : Colors.red.withAlpha(30),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  _agent!.isAvailable ? 'Disponible' : 'Indisponible',
-                                  style: TextStyle(
-                                    color: _agent!.isAvailable ? Colors.green : Colors.red,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 12,
-                                  ),
-                                ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withAlpha(40),
+                                blurRadius: 8,
+                                spreadRadius: 1,
                               ),
                             ],
                           ),
-                        ],
-                      ),
+                          child: UserAvatar(
+                            imageUrl: _agent!.profileImageUrl,
+                            name: _agent!.fullName,
+                            size: 70,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _agent!.fullName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _agent!.profession,
+                                style: TextStyle(
+                                  color: Colors.grey[700],
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  RatingDisplay(
+                                    rating: _agent!.averageRating,
+                                    ratingCount: _agent!.ratingCount,
+                                  ),
+                                  const Spacer(),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _agent!.isAvailable
+                                          ? Colors.green.withAlpha(30)
+                                          : Colors.red.withAlpha(30),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          _agent!.isAvailable ? Icons.check_circle : Icons.cancel,
+                                          size: 12,
+                                          color: _agent!.isAvailable ? Colors.green : Colors.red,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          _agent!.isAvailable ? 'Disponible' : 'Indisponible',
+                                          style: TextStyle(
+                                            color: _agent!.isAvailable ? Colors.green : Colors.red,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
+
+                    // Afficher un avertissement si l'agent est indisponible et l'utilisateur n'est pas admin
+                    if (!_agent!.isAvailable && !canViewUnavailable) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withAlpha(25),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.orange),
+                        ),
+                        child: Row(
+                          children: const [
+                            Icon(
+                              Icons.warning,
+                              color: Colors.orange,
+                              size: 20,
+                            ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Cet agent est actuellement indisponible à la réservation.',
+                                style: TextStyle(
+                                  color: Colors.orange,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    // Afficher les informations admin si l'utilisateur a les permissions
+                    if (user != null && availabilityService.canModifyAgentAvailability(user)) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withAlpha(25),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.blue),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.admin_panel_settings,
+                              color: Colors.blue,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Mode administrateur: Vous pouvez modifier la disponibilité de cet agent.',
+                                style: TextStyle(
+                                  color: Colors.blue,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
-              ],
-            ),
-          ),
+              ),
 
           // Formulaire de réservation
           Padding(
@@ -575,11 +819,18 @@ class _ReservationScreenState extends State<ReservationScreen> {
 
                   const SizedBox(height: 24),
 
-                  // Bouton de soumission
-                  PrimaryButton(
-                    text: AppConstants.submitReservation,
-                    onPressed: _submitReservation,
-                    isLoading: _isSubmitting,
+                  // Bouton de soumission avec vérification des permissions
+                  FutureBuilder<bool>(
+                    future: _canSubmitReservation(),
+                    builder: (context, snapshot) {
+                      final canSubmit = snapshot.data ?? false;
+                      
+                      return PrimaryButton(
+                        text: AppConstants.submitReservation,
+                        onPressed: canSubmit ? _submitReservation : null,
+                        isLoading: _isSubmitting,
+                      );
+                    },
                   ),
 
                   const SizedBox(height: 20),
@@ -587,8 +838,134 @@ class _ReservationScreenState extends State<ReservationScreen> {
               ),
             ),
           ),
+      ],
+    );
+  }
+
+  // Vérifier si l'utilisateur peut soumettre une réservation
+  Future<bool> _canSubmitReservation() async {
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final availabilityService = Provider.of<AgentAvailabilityService>(context, listen: false);
+
+      final currentUser = authService.currentUser;
+      if (currentUser == null) {
+        return false;
+      }
+
+      final userProfile = await Provider.of<DatabaseService>(context, listen: false)
+          .getUser(currentUser.uid);
+      if (userProfile == null) {
+        return false;
+      }
+
+      // Les admins peuvent toujours soumettre
+      if (userProfile.isAdmin) {
+        return true;
+      }
+
+      // Les autres utilisateurs doivent vérifier la disponibilité
+      return await availabilityService.canReserveAgent(userProfile, widget.agentId);
+    } catch (e) {
+      debugPrint('Erreur lors de la vérification de la soumission: $e');
+      return false;
+    }
+  }
+
+  // Gérer les actions administrateur
+  void _handleAdminAction(String action) async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final availabilityService = Provider.of<AgentAvailabilityService>(context, listen: false);
+
+    final currentUser = authService.currentUser;
+    if (currentUser == null) return;
+
+    final userProfile = await Provider.of<DatabaseService>(context, listen: false)
+        .getUser(currentUser.uid);
+    if (userProfile == null || !availabilityService.canModifyAgentAvailability(userProfile)) {
+      return;
+    }
+
+    switch (action) {
+      case 'toggle_availability':
+        _showToggleAvailabilityDialog();
+        break;
+      case 'view_logs':
+        _showAvailabilityLogs();
+        break;
+    }
+  }
+
+  // Afficher le dialogue de basculement de disponibilité
+  void _showToggleAvailabilityDialog() {
+    if (_agent == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Modifier la disponibilité'),
+        content: Text(
+          'Voulez-vous ${_agent!.isAvailable ? 'rendre indisponible' : 'rendre disponible'} l\'agent ${_agent!.fullName} ?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                final availabilityService = Provider.of<AgentAvailabilityService>(context, listen: false);
+                
+                if (_agent!.isAvailable) {
+                  await availabilityService.setAgentManuallyUnavailable(
+                    _agent!.id,
+                    'Modification manuelle par administrateur',
+                  );
+                } else {
+                  await availabilityService.setAgentManuallyAvailable(
+                    _agent!.id,
+                    'Modification manuelle par administrateur',
+                  );
+                }
+
+                // Recharger les détails de l'agent
+                _loadAgentDetails();
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Disponibilité de l\'agent mise à jour avec succès'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Erreur lors de la mise à jour: ${e.toString()}'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: Text('Confirmer'),
+          ),
         ],
       ),
     );
   }
+
+  // Afficher les logs de disponibilité
+  void _showAvailabilityLogs() {
+    if (_agent == null) return;
+
+    // Naviguer vers un écran de logs (à implémenter)
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Fonctionnalité des logs à implémenter'),
+        backgroundColor: Colors.blue,
+      ),
+    );
+  }
+}
 }

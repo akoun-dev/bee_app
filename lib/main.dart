@@ -11,6 +11,7 @@ import 'services/report_service.dart';
 import 'services/settings_service.dart';
 import 'services/theme_service.dart';
 import 'services/recommendation_service.dart';
+import 'services/agent_availability_service.dart';
 import 'utils/routes.dart';
 import 'utils/constants.dart';
 
@@ -43,19 +44,33 @@ class BeeApp extends StatefulWidget {
 class _BeeAppState extends State<BeeApp> {
   // Services
   final AuthService _authService = AuthService();
-  final DatabaseService _databaseService = DatabaseService();
   final StorageService _storageService = StorageService();
   final NotificationService _notificationService = NotificationService();
   final ReportService _reportService = ReportService();
   final SettingsService _settingsService = SettingsService();
   final ThemeService _themeService = ThemeService();
   final RecommendationService _recommendationService = RecommendationService();
+  
+  // Services avec dépendances
+  late final AgentAvailabilityService _availabilityService;
+  late final DatabaseService _databaseService;
 
   @override
   void initState() {
     super.initState();
-    // Initialiser les notifications
+    
+    // Initialiser les services avec dépendances
+    _availabilityService = AgentAvailabilityService(
+      DatabaseService.withoutAvailability(),
+      FirebaseFirestore.instance,
+    );
+    _databaseService = DatabaseService(_availabilityService);
+    
+    // Initialiser les notifications et autres services
     _initializeNotifications();
+    
+    // Démarrer le timer de mise à jour de la disponibilité
+    _availabilityService.startAvailabilityTimer();
   }
 
   // Initialiser les services
@@ -65,6 +80,14 @@ class _BeeAppState extends State<BeeApp> {
 
     // Initialiser le service de thème
     await _themeService.initialize();
+    
+    // Effectuer une première mise à jour de la disponibilité des agents
+    try {
+      await _availabilityService.updateAgentsAvailability();
+      debugPrint('Mise à jour initiale de la disponibilité des agents effectuée');
+    } catch (e) {
+      debugPrint('Erreur lors de la mise à jour initiale de la disponibilité: $e');
+    }
   }
 
   @override
@@ -80,6 +103,7 @@ class _BeeAppState extends State<BeeApp> {
         Provider<SettingsService>.value(value: _settingsService),
         ChangeNotifierProvider<ThemeService>.value(value: _themeService),
         Provider<RecommendationService>.value(value: _recommendationService),
+        Provider<AgentAvailabilityService>.value(value: _availabilityService),
         // Écouter les changements d'état d'authentification
         StreamProvider(
           create: (_) => _authService.authStateChanges,
