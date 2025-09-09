@@ -321,12 +321,12 @@ class _AdminDrawerState extends State<AdminDrawer> {
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
-                // Tableau de bord
+                // Tableau de bord principal (amélioré)
                 _buildNavItem(
                   context: context,
                   icon: Icons.dashboard,
                   title: 'Tableau de bord',
-                  route: '/admin/dashboard',
+                  route: '/admin/enhanced-dashboard',
                 ),
 
                 // Réservations
@@ -380,6 +380,49 @@ class _AdminDrawerState extends State<AdminDrawer> {
                 // Divider pour séparer les sections
                 const Divider(),
 
+                // Section RGPD et Conformité
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Text(
+                    'RGPD & Conformité',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ),
+
+                // Gestion des consentements
+                _buildNavItem(
+                  context: context,
+                  icon: Icons.privacy_tip,
+                  title: 'Consentements',
+                  route: '/admin/consents',
+                ),
+
+                // Droit à l'oubli
+                _buildNavItem(
+                  context: context,
+                  icon: Icons.delete_forever,
+                  title: 'Droit à l\'oubli',
+                  route: '/admin/gdpr',
+                ),
+
+                // Internationalisation
+                _buildNavItem(
+                  context: context,
+                  icon: Icons.language,
+                  title: 'Internationalisation',
+                  route: '/admin/localization',
+                ),
+
+                // Divider pour séparer les sections
+                const Divider(),
+
                 // Section Sécurité et Monitoring
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -401,7 +444,7 @@ class _AdminDrawerState extends State<AdminDrawer> {
                   context: context,
                   icon: Icons.history,
                   title: 'Logs d\'audit',
-                  route: '/admin/audit-logs',
+                  route: '/admin/audit',
                 ),
 
                 // Gestion des permissions

@@ -32,15 +32,18 @@ import '../screens/admin/app_settings_screen.dart';
 import '../screens/admin/reservation_detail_screen.dart';
 import '../screens/admin/users_management_screen.dart';
 import '../screens/admin/admin_profile_screen.dart';
-// Nouveaux écrans admin
+
+// Nouveaux écrans admin RGPD et conformité
+import '../screens/admin/enhanced_admin_dashboard_screen.dart';
+import '../screens/admin/consent_management_screen.dart';
+import '../screens/admin/data_deletion_management_screen.dart';
+import '../screens/admin/localization_management_screen.dart';
 import '../screens/admin/audit_logs_screen.dart';
 import '../screens/admin/permissions_management_screen.dart';
 import '../screens/admin/system_monitoring_screen.dart';
 
 // Configuration des routes de l'application
 class AppRouter {
-  // Le champ _baseRouter n'est plus utilisé, nous définissons directement les routes dans le router
-
   // Router avec redirection basée sur l'authentification
   static final GoRouter router = GoRouter(
     initialLocation: '/splash',
@@ -50,6 +53,7 @@ class AppRouter {
         path: '/splash',
         builder: (context, state) => const SplashScreen(),
       ),
+      
       // Routes utilisateur
       GoRoute(
         path: '/auth',
@@ -168,34 +172,24 @@ class AppRouter {
       ),
 
       // Routes administrateur
-      GoRoute(path: '/admin', redirect: (_, __) => '/admin/dashboard'),
+      GoRoute(path: '/admin', redirect: (_, __) => '/admin/enhanced-dashboard'),
+      
+      // Tableau de bord principal (amélioré)
+      GoRoute(
+        path: '/admin/enhanced-dashboard',
+        builder: (context, state) => const EnhancedAdminDashboardScreen(),
+      ),
+      
+      // Ancien tableau de bord (pour compatibilité)
       GoRoute(
         path: '/admin/dashboard',
         builder: (context, state) => const DashboardScreen(),
       ),
+      
+      // Gestion des réservations
       GoRoute(
         path: '/admin/reservations',
         builder: (context, state) => const EnhancedReservationsScreen(),
-      ),
-      GoRoute(
-        path: '/admin/agents',
-        builder: (context, state) => const AgentsManagementScreen(),
-      ),
-      GoRoute(
-        path: '/admin/statistics',
-        builder: (context, state) => const StatisticsScreen(),
-      ),
-      GoRoute(
-        path: '/admin/notifications',
-        builder: (context, state) => const NotificationManagementScreen(),
-      ),
-      GoRoute(
-        path: '/admin/reports',
-        builder: (context, state) => const ReportGenerationScreen(),
-      ),
-      GoRoute(
-        path: '/admin/settings',
-        builder: (context, state) => const AppSettingsScreen(),
       ),
       GoRoute(
         path: '/admin/reservation/:id',
@@ -204,26 +198,75 @@ class AppRouter {
           return ReservationDetailScreen(reservationId: reservationId);
         },
       ),
+      
+      // Gestion des agents
+      GoRoute(
+        path: '/admin/agents',
+        builder: (context, state) => const AgentsManagementScreen(),
+      ),
+      
+      // Gestion des utilisateurs
       GoRoute(
         path: '/admin/users',
         builder: (context, state) => const UsersManagementScreen(),
       ),
+      
+      // Statistiques et rapports
       GoRoute(
-        path: '/admin/profile',
-        builder: (context, state) => const AdminProfileScreen(),
+        path: '/admin/statistics',
+        builder: (context, state) => const StatisticsScreen(),
       ),
-      // Nouvelles routes admin
       GoRoute(
-        path: '/admin/audit-logs',
+        path: '/admin/reports',
+        builder: (context, state) => const ReportGenerationScreen(),
+      ),
+      
+      // Notifications et communication
+      GoRoute(
+        path: '/admin/notifications',
+        builder: (context, state) => const NotificationManagementScreen(),
+      ),
+      
+      // RGPD et conformité
+      GoRoute(
+        path: '/admin/consents',
+        builder: (context, state) => const ConsentManagementScreen(),
+      ),
+      GoRoute(
+        path: '/admin/gdpr',
+        builder: (context, state) => const DataDeletionManagementScreen(),
+      ),
+      
+      // Internationalisation
+      GoRoute(
+        path: '/admin/localization',
+        builder: (context, state) => const LocalizationManagementScreen(),
+      ),
+      
+      // Sécurité et audit
+      GoRoute(
+        path: '/admin/audit',
         builder: (context, state) => const AuditLogsScreen(),
       ),
       GoRoute(
         path: '/admin/permissions',
         builder: (context, state) => const PermissionsManagementScreen(),
       ),
+      
+      // Surveillance système
       GoRoute(
         path: '/admin/monitoring',
         builder: (context, state) => const SystemMonitoringScreen(),
+      ),
+      
+      // Paramètres et profil
+      GoRoute(
+        path: '/admin/settings',
+        builder: (context, state) => const AppSettingsScreen(),
+      ),
+      GoRoute(
+        path: '/admin/profile',
+        builder: (context, state) => const AdminProfileScreen(),
       ),
     ],
     errorBuilder:
@@ -291,8 +334,8 @@ class AppRouter {
 
           // Rediriger vers la page appropriée en fonction du statut d'administrateur
           if (userData != null && userData.isAdmin) {
-            // Logger.info('Redirection: Admin connecté, redirection vers /admin/reservations');
-            return '/admin/reservations';
+            // Logger.info('Redirection: Admin connecté, redirection vers /admin/enhanced-dashboard');
+            return '/admin/enhanced-dashboard';
           } else {
             // Logger.info('Redirection: Utilisateur connecté, redirection vers /dashboard');
             return '/dashboard';
