@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/agent_model.dart';
@@ -10,6 +11,7 @@ import 'database_service.dart';
 class AgentAvailabilityService {
   final DatabaseService _databaseService;
   final FirebaseFirestore _firestore;
+  Timer? _availabilityTimer;
 
   AgentAvailabilityService(this._databaseService, this._firestore);
 
@@ -284,12 +286,17 @@ class AgentAvailabilityService {
 
   // Démarrer un timer pour la mise à jour automatique de la disponibilité
   void startAvailabilityTimer({Duration interval = const Duration(minutes: 5)}) {
-    Timer.periodic(interval, (timer) async {
+    _availabilityTimer = Timer.periodic(interval, (timer) async {
       try {
         await updateAgentsAvailability();
       } catch (e) {
         debugPrint('Erreur dans le timer de mise à jour de disponibilité: $e');
       }
     });
+  }
+
+  void stopAvailabilityTimer() {
+    _availabilityTimer?.cancel();
+    _availabilityTimer = null;
   }
 }
