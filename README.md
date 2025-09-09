@@ -1,249 +1,143 @@
-# 🐝 ZIBENE SECURITY
+ZIBENE SECURITY
+Application mobile pour la réservation de gardes du corps certifiés
 
-> **Application mobile professionnelle de réservation de gardes du corps certifiés**
+Description
+ZIBENE SECURITY est une application mobile Flutter qui permet aux utilisateurs de réserver des gardes du corps certifiés pour leurs besoins de sécurité. L'application offre une interface intuitive pour les clients ainsi qu'un panneau d'administration complet pour la gestion des agents, des réservations et des utilisateurs.
 
-[![Flutter](https://img.shields.io/badge/Flutter-3.7.2+-02569B?style=flat&logo=flutter)](https://flutter.dev)
-[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=flat&logo=firebase&logoColor=black)](https://firebase.google.com)
-[![Dart](https://img.shields.io/badge/Dart-0175C2?style=flat&logo=dart)](https://dart.dev)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-
-## 📱 À propos
-
-**ZIBENE SECURITY** est une application mobile Flutter complète qui permet aux utilisateurs de réserver des agents de sécurité certifiés pour leurs besoins de protection personnelle ou événementielle. L'application offre une interface moderne, un système de gestion avancé et des fonctionnalités d'administration complètes.
-
-### ✨ Fonctionnalités principales
-
-#### 👥 **Pour les utilisateurs**
-- 🔍 **Recherche avancée** d'agents par nom, profession, matricule
-- 🎯 **Filtres intelligents** (disponibilité, certification, spécialité)
-- 📅 **Système de réservation** avec sélection de dates
-- 📊 **Tableau de bord** personnalisé avec statistiques
-- ⭐ **Évaluations et avis** sur les agents
-- 🎯 **Recommandations** basées sur l'historique
-- 👤 **Gestion de profil** complète
-- 🔔 **Notifications** en temps réel
-
-#### 🛡️ **Pour les administrateurs**
-- 📈 **Tableau de bord analytique** avec graphiques interactifs
-- 👥 **Gestion complète des agents** (CRUD)
-- ✅ **Approbation/rejet** des réservations
-- 📊 **Statistiques détaillées** et rapports
-- 👤 **Gestion des utilisateurs**
-- 🔔 **Système de notifications** avancé
-- 📋 **Logs d'audit** pour traçabilité
-- ⚙️ **Configuration** de l'application
-
-## 🏗️ Architecture technique
-
-### 📱 Frontend
-- **Framework** : Flutter 3.7.2+
-- **Langage** : Dart
-- **Design** : Material Design 3
-- **État** : Provider pattern
-- **Navigation** : GoRouter
-- **Graphiques** : FL Chart
-
-### ☁️ Backend
-- **Authentification** : Firebase Auth
-- **Base de données** : Cloud Firestore
-- **Stockage** : Firebase Storage
-- **Notifications** : Firebase Cloud Messaging
-- **Règles de sécurité** : Firestore Security Rules
-
-### 🎨 Design
-- **Couleurs** : Jaune (#FFC107), Noir (#000000), Blanc
-- **Police** : Poppins
-- **Thèmes** : Clair/Sombre avec support système
-- **Responsive** : Adaptation multi-écrans
-
-## 🚀 Installation et configuration
-
-### Prérequis
-
-- **Flutter SDK** 3.7.2 ou supérieur
-- **Dart SDK** inclus avec Flutter
-- **Android Studio** ou **VS Code** avec extensions Flutter
-- **Compte Firebase** pour la configuration backend
-
-Vérifiez votre installation :
-```bash
-flutter doctor
-```
-
-### 1. Cloner le projet
-
-```bash
-git clone https://github.com/akoun-dev/bee_app.git
-cd bee_app
-```
-
-### 2. Configuration Firebase
-
-1. **Installer FlutterFire CLI** :
-   ```bash
-   dart pub global activate flutterfire_cli
-   ```
-
-2. **Se connecter à Firebase** :
-   ```bash
-   firebase login
-   ```
-
-3. **Configurer le projet** :
-   ```bash
-   flutterfire configure
-   ```
-   
-   Cette commande :
-   - Génère `lib/firebase_options.dart`
-   - Configure `android/app/google-services.json`
-   - Configure `ios/Runner/GoogleService-Info.plist`
-
-### 3. Installation des dépendances
-
-```bash
-flutter pub get
-```
-
-### 4. Configuration des règles Firebase
-
-1. **Firestore Rules** : Déployez les règles depuis `firestore.rules`
-2. **Storage Rules** : Déployez les règles depuis `storage.rules`
-3. **Indexes** : Créez les index depuis `firestore.indexes.json`
-
-```bash
-firebase deploy --only firestore:rules,firestore:indexes,storage
-```
-
-## 🏃‍♂️ Lancement de l'application
-
-### Mode développement
-
-```bash
-flutter run
-```
-
-### Build de production
-
-**Android APK** :
-```bash
-flutter build apk --release
-```
-
-**Android App Bundle** :
-```bash
-flutter build appbundle --release
-```
-
-**iOS** :
-```bash
-flutter build ios --release
-```
-
-## 📁 Structure du projet
-
-```
+Fonctionnalités
+Fonctionnalités Utilisateur
+Authentification sécurisée : Inscription et connexion avec email/mot de passe
+Vérification d'email : Confirmation de l'adresse email lors de l'inscription
+Recherche d'agents : Parcours et filtrage des gardes du corps disponibles
+Détails des agents : Consultation des profils détaillés avec compétences et évaluations
+Réservation en ligne : Réservation simple et rapide de gardes du corps
+Suivi des réservations : Historique complet des réservations et leur statut
+Évaluation des services : Système de notation et commentaires après chaque mission
+Recommandations personnalisées : Suggestions d'agents basées sur les préférences
+Profil utilisateur : Gestion des informations personnelles et des préférences
+Fonctionnalités Administrateur
+Tableau de bord analytique : Statistiques détaillées sur les utilisateurs, agents et réservations
+Gestion des agents : Ajout, modification et suppression des profils des gardes du corps
+Gestion des utilisateurs : Administration des comptes clients
+Gestion des réservations : Validation, suivi et traitement des demandes
+Génération de rapports : Exportation des données et statistiques
+Gestion des notifications : Envoi de notifications aux utilisateurs
+Surveillance du système : Monitoring des performances et de l'activité
+Gestion des permissions : Contrôle d'accès et des rôles
+Journal d'audit : Suivi des actions et modifications
+Architecture Technique
+Structure du Projet
 lib/
-├── main.dart                 # Point d'entrée de l'application
-├── models/                   # Modèles de données
-│   ├── user_model.dart
-│   ├── agent_model.dart
-│   ├── reservation_model.dart
-│   ├── review_model.dart
-│   ├── audit_log_model.dart
-│   └── user_preferences_model.dart
-├── screens/                  # Écrans de l'application
-│   ├── admin/               # Écrans administrateur (15)
-│   └── user/                # Écrans utilisateur (14)
-├── services/                # Services métier
-│   ├── auth_service.dart
-│   ├── database_service.dart
-│   ├── storage_service.dart
-│   ├── notification_service.dart
-│   └── ...
-├── widgets/                 # Composants réutilisables
-│   ├── common_widgets.dart
-│   ├── agent_card.dart
-│   ├── reservation_card.dart
-│   └── ...
-└── utils/                   # Utilitaires
-    ├── constants.dart
-    ├── theme.dart
-    └── routes.dart
-```
+├── models/           # Modèles de données (Agent, User, Reservation, etc.)
+├── screens/          # Écrans de l'application
+│   ├── user/        # Écrans pour les utilisateurs
+│   └── admin/       # Écrans pour les administrateurs
+├── services/        # Services métier (Auth, Database, Notifications, etc.)
+├── utils/           # Utilitaires (Routes, Constants, Theme, etc.)
+├── widgets/         # Widgets réutilisables
+└── main.dart        # Point d'entrée de l'application
 
-## 🧪 Tests
+txt
 
-### Lancer les tests
 
-```bash
-flutter test
-```
+Technologies Utilisées
+Flutter : Framework de développement multiplateforme
+Dart : Langage de programmation
+Firebase : Backend as a Service
+Firebase Authentication : Gestion de l'authentification
+Cloud Firestore : Base de données NoSQL
+Firebase Storage : Stockage des fichiers
+Firebase Messaging : Notifications push
+Provider : Gestion d'état
+GoRouter : Navigation et routage
+FL Chart : Graphiques et visualisations
+Modèles de Données
+UserModel : Représente les utilisateurs de l'application
+AgentModel : Représente les gardes du corps
+ReservationModel : Représente les réservations de missions
+ReviewModel : Représente les évaluations laissées par les utilisateurs
+Installation et Configuration
+Prérequis
+Flutter SDK (version 3.7.2 ou supérieure)
+Un compte Firebase
+Android Studio ou VS Code
+Configuration de Firebase
+Créer un projet sur la console Firebase
+Ajouter une application Android et/ou iOS
+Télécharger les fichiers de configuration (google-services.json pour Android, GoogleService-Info.plist pour iOS)
+Placer les fichiers dans les répertoires appropriés :
+Android : android/app/google-services.json
+iOS : ios/Runner/GoogleService-Info.plist
+Installation des Dépendances
+flutter pub get
 
-### Tests d'intégration
+bash
 
-```bash
-flutter drive --target=test_driver/app.dart
-```
 
-## 📊 Modèles de données
+Configuration des Règles Firestore
+Les règles de sécurité Firestore doivent être configurées dans les fichiers :
 
-L'application utilise 6 modèles principaux :
+firestore.rules
+firestore.indexes.json
+Lancement de l'Application
+flutter run
 
-1. **UserModel** - Gestion des utilisateurs et administrateurs
-2. **AgentModel** - Profils détaillés des gardes du corps
-3. **ReservationModel** - Gestion des missions et réservations
-4. **ReviewModel** - Système d'évaluations et avis
-5. **AuditLogModel** - Logs d'audit pour traçabilité
-6. **UserPreferencesModel** - Préférences et personnalisation
+bash
 
-## 🔐 Sécurité
 
-- **Authentification** sécurisée via Firebase Auth
-- **Vérification email** obligatoire
-- **Règles Firestore** granulaires
-- **Logs d'audit** complets
-- **Validation** côté client et serveur
+Déploiement
+Android
+Générer la clé de signature :
+keytool -genkey -v -keystore ~/upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
 
-## 🌍 Internationalisation
+bash
 
-L'application est actuellement en **français** avec support pour :
-- Formats de date/heure locaux
-- Devise (FCFA)
-- Messages d'erreur localisés
 
-## 📱 Compatibilité
+Configurer les informations de signature dans android/app/build.gradle
 
-- **Android** : API 21+ (Android 5.0+)
-- **iOS** : iOS 11.0+
-- **Web** : Navigateurs modernes (Chrome, Firefox, Safari, Edge)
+Générer l'APK ou l'AAB :
 
-## 🤝 Contribution
+flutter build apk --release
+# ou
+flutter build appbundle --release
 
-1. Fork le projet
-2. Créez une branche feature (`git checkout -b feature/AmazingFeature`)
-3. Committez vos changements (`git commit -m 'Add some AmazingFeature'`)
-4. Push vers la branche (`git push origin feature/AmazingFeature`)
-5. Ouvrez une Pull Request
+bash
 
-## 📄 Licence
 
-Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
+iOS
+Configurer les informations de signature dans Xcode
 
-## 👨‍💻 Auteur
+Générer l'IPA :
 
-**ABOA AKOUN BERNARD**
-- GitHub: [@akoun-dev](https://github.com/akoun-dev)
-- Email: aboa.akoun40@gmail.com
+flutter build ios --release
 
-## 🙏 Remerciements
+bash
 
-- [Flutter Team](https://flutter.dev) pour le framework
-- [Firebase Team](https://firebase.google.com) pour les services backend
-- [Material Design](https://material.io) pour les guidelines de design
 
----
+Points d'Amélioration et Vigilances
+Sécurité & Permissions
+Vérification des rôles côté Firestore (rules)
+Validation des entrées côté client et serveur
+Performance
+Utilisation du cache réseau pour les images
+Optimisation des requêtes Firestore (pagination, indexation)
+Gestion mémoire appropriée
+Expérience Utilisateur
+Feedbacks visuels lors des opérations
+Accessibilité (taille des boutons, contraste, navigation)
+Internationalisation (prévue pour le futur)
+Tests & Robustesse
+Renforcement des tests unitaires et d'intégration
+Gestion des cas limites (suppression d'agents avec réservations, etc.)
+Backend & Scalabilité
+Audit des règles Firestore
+Surveillance des quotas Firebase
+Contributeurs
+Akoun-dev - Développeur principal
+Licence
+Ce projet est sous licence privée.
 
-<div align="center">
-  <strong>🐝 ZIBENE SECURITY - Votre sécurité, notre priorité</strong>
-</div>
+Contact
+Pour toute question ou suggestion, veuillez contacter :
+
+Email : akoun-dev@example.com
