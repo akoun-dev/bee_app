@@ -36,7 +36,7 @@ class AdvancedNotificationService extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de l\'initialisation des notifications: $e');
+        debugPrint('Erreur lors de l\'initialisation des notifications: $e');
       }
     }
   }
@@ -75,7 +75,7 @@ class AdvancedNotificationService extends ChangeNotifier {
       // Obtenir le token FCM
       _fcmToken = await _messaging.getToken();
       if (kDebugMode) {
-        print('Token FCM: $_fcmToken');
+        debugPrint('Token FCM: $_fcmToken');
       }
 
       // Écouter les changements de token
@@ -105,7 +105,7 @@ class AdvancedNotificationService extends ChangeNotifier {
   // Gérer les messages en foreground
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
     if (kDebugMode) {
-      print('Message reçu en foreground: ${message.messageId}');
+      debugPrint('Message reçu en foreground: ${message.messageId}');
     }
 
     // Afficher une notification locale
@@ -122,7 +122,7 @@ class AdvancedNotificationService extends ChangeNotifier {
   // Gérer les messages en background
   Future<void> _handleBackgroundMessage(RemoteMessage message) async {
     if (kDebugMode) {
-      print('Message reçu en background: ${message.messageId}');
+      debugPrint('Message reçu en background: ${message.messageId}');
     }
 
     // Traiter l'action selon le type de notification
@@ -253,7 +253,7 @@ class AdvancedNotificationService extends ChangeNotifier {
 
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de l\'envoi de la notification admin: $e');
+        debugPrint('Erreur lors de l\'envoi de la notification admin: $e');
       }
       rethrow;
     }
@@ -275,7 +275,7 @@ class AdvancedNotificationService extends ChangeNotifier {
         await _sendMulticastMessage(batch, title, body, data);
       } catch (e) {
         if (kDebugMode) {
-          print('Erreur lors de l\'envoi du batch $i: $e');
+          debugPrint('Erreur lors de l\'envoi du batch $i: $e');
         }
       }
     }
@@ -320,7 +320,7 @@ class AdvancedNotificationService extends ChangeNotifier {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de l\'envoi FCM: $e');
+        debugPrint('Erreur lors de l\'envoi FCM: $e');
       }
       rethrow;
     }
@@ -368,7 +368,7 @@ class AdvancedNotificationService extends ChangeNotifier {
 
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de l\'envoi de la notification personnalisée: $e');
+        debugPrint('Erreur lors de l\'envoi de la notification personnalisée: $e');
       }
       rethrow;
     }
@@ -386,7 +386,7 @@ class AdvancedNotificationService extends ChangeNotifier {
       });
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de la sauvegarde de la notification: $e');
+        debugPrint('Erreur lors de la sauvegarde de la notification: $e');
       }
     }
   }
@@ -416,7 +416,7 @@ class AdvancedNotificationService extends ChangeNotifier {
           .toList();
     } catch (e) {
       if (kDebugMode) {
-        print('Erreur lors de la récupération des notifications: $e');
+        debugPrint('Erreur lors de la récupération des notifications: $e');
       }
       return [];
     }

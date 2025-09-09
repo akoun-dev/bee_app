@@ -1,9 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:logger/logger.dart';
 import '../models/agent_model.dart';
 import '../models/reservation_model.dart';
 import '../models/review_model.dart';
 import '../models/user_model.dart';
 import 'agent_availability_service.dart';
+
+final logger = Logger();
 
 // Service pour gérer les opérations de base de données Firestore avec gestion améliorée des erreurs et timeouts
 class DatabaseService {
@@ -742,7 +746,7 @@ class DatabaseService {
       } catch (agentUpdateError) {
         // Si la mise à jour de l'agent échoue, on continue quand même
         // L'avis a été créé avec succès, c'est le plus important
-        print(
+        logger.w(
           'Avertissement: Impossible de mettre à jour la note de l\'agent: $agentUpdateError',
         );
       }
@@ -756,7 +760,7 @@ class DatabaseService {
         await updateReservation(updatedReservation);
       } catch (reservationUpdateError) {
         // Si la mise à jour de la réservation échoue, on continue quand même
-        print(
+        logger.w(
           'Avertissement: Impossible de mettre à jour la réservation: $reservationUpdateError',
         );
       }
