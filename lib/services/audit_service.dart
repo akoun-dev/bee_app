@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:logger/logger.dart';
 
 // Service pour l'audit et les logs des actions administratives
+final logger = Logger();
 class AuditService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   late final CollectionReference _auditCollection;
@@ -39,7 +41,7 @@ class AuditService {
       await _auditCollection.add(auditLog.toMap());
     } catch (e) {
       // En cas d'erreur, on ne veut pas bloquer l'action principale
-      print('Erreur lors de l\'enregistrement du log d\'audit: $e');
+      logger.w('Erreur lors de l\'enregistrement du log d\'audit: $e');
     }
   }
 
