@@ -1,6 +1,10 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:logger/logger.dart';
+import '../utils/constants.dart';
+
+final logger = Logger();
 
 // Service de sécurité pour les fonctionnalités avancées
 class SecurityService extends ChangeNotifier {
@@ -185,20 +189,164 @@ class SecurityService extends ChangeNotifier {
   bool hasPermission(String action, {String? targetType}) {
     if (!_isSessionActive) return false;
 
-    // Ici, vous pouvez implémenter une logique de permissions plus granulaire
-    // Par exemple, certains admins peuvent avoir des permissions limitées
+    // Journaliser la vérification de permission pour l'audit
+    logger.i('Vérification de permission: action=$action, targetType=$targetType');
 
+    // Permissions par défaut pour les administrateurs
+    // Dans une implémentation réelle, ces permissions seraient chargées depuis la base de données
+    final Map<String, bool> defaultAdminPermissions = {
+      'view_users': true,
+      'create_users': true,
+      'edit_users': true,
+      'delete_users': true,
+      'view_agents': true,
+      'create_agents': true,
+      'edit_agents': true,
+      'delete_agents': true,
+      'view_reservations': true,
+      'manage_reservations': true,
+      'view_audit_logs': true,
+      'certify_agents': true,
+      'toggle_agent_availability': true,
+      'modify_settings': true,
+      'view_statistics': true,
+      'export_data': true,
+    };
+
+    // Vérifier les permissions basées sur l'action
     switch (action) {
       case 'delete_user':
       case 'delete_agent':
-        return true; // Seuls les super-admins peuvent supprimer
+        return defaultAdminPermissions['delete_users'] ?? false;
       case 'view_audit_logs':
-        return true; // Tous les admins peuvent voir les logs
+        return defaultAdminPermissions['view_audit_logs'] ?? false;
       case 'modify_settings':
-        return true; // Seuls les super-admins peuvent modifier les paramètres
+        return defaultAdminPermissions['modify_settings'] ?? false;
+      case 'certify_agents':
+        return defaultAdminPermissions['certify_agents'] ?? false;
+      case 'toggle_agent_availability':
+        return defaultAdminPermissions['toggle_agent_availability'] ?? false;
+      case 'export_data':
+        return defaultAdminPermissions['export_data'] ?? false;
       default:
-        return true; // Actions de base autorisées pour tous les admins
+        return defaultAdminPermissions[action] ?? true; // Actions de base autorisées
     }
+  }
+
+  // Vérifier si l'utilisateur a des permissions étendues
+  bool hasExtendedPermissions() {
+    if (!_isSessionActive) return false;
+    
+    // Dans une implémentation réelle, vérifier si l'utilisateur a des permissions étendues
+    // Par exemple, un super-administrateur
+    return true; // Pour l'instant, tous les admins ont des permissions étendues
+  }
+
+  // Vérifier si une action critique nécessite une double vérification
+  bool requiresDoubleVerification(String action) {
+    const criticalActions = {
+      'delete_user',
+      'delete_agent',
+      'modify_settings',
+      'export_data',
+      'mass_delete',
+    };
+
+    return criticalActions.contains(action);
+  }
+
+  // Obtenir le niveau de sécurité requis pour une action
+  String getSecurityLevel(String action) {
+    const criticalActions = {
+      'delete_user': 'high',
+      'delete_agent': 'high',
+      'modify_settings': 'high',
+      'export_data': 'medium',
+      'certify_agents': 'medium',
+      'toggle_agent_availability': 'low',
+    };
+
+    return criticalActions[action] ?? 'low';
+  }
+
+  // Journaliser une action de sécurité
+  void logSecurityAction(String action, String targetType, String targetId, {
+    Map<String, dynamic>? oldData,
+    Map<String, dynamic>? newData,
+    String? description,
+  }) {
+    final logEntry = {
+      'timestamp': DateTime.now().toIso8601String(),
+      'action': action,
+      'targetType': targetType,
+      'targetId': targetId,
+      'oldData': oldData,
+      'newData': newData,
+      'description': description ?? 'Action de sécurité non spécifiée',
+      'sessionActive': _isSessionActive,
+    };
+
+    logger.i('Action de sécurité: ${maskSensitiveData(logEntry.toString())}');
+  }
+
+  // Vérifier la conformité RGPD pour une action
+  bool checkGDPRCompliance(String action, Map<String, dynamic> data) {
+    const gdprSensitiveActions = {
+      'delete_user',
+      'export_user_data',
+      'view_user_data',
+    };
+
+    if (!gdprSensitiveActions.contains(action)) {
+      return true; // L'action n'est pas soumise à la conformité RGPD
+    }
+
+    // Vérifier si les données contiennent des informations personnelles
+    final personalDataFields = ['email', 'fullName', 'phoneNumber', 'address'];
+    final containsPersonalData = personalDataFields.any((field) => data.containsKey(field));
+
+    if (containsPersonalData) {
+      logger.w('Action RGPD sensible détectée: $action');
+      // Dans une implémentation réelle, vous devriez peut-être demander un consentement supplémentaire
+    }
+
+    return true;
+  }
+
+  // Valider une action avant exécution
+  Future<bool> validateAction(String action, String targetType, String targetId, {
+    Map<String, dynamic>? data,
+  }) async {
+    // 1. Vérifier si la session est active
+    if (!_isSessionActive) {
+      logger.w('Tentative d\'action avec session inactive: $action');
+      return false;
+    }
+
+    // 2. Vérifier les permissions
+    if (!hasPermission(action, targetType: targetType)) {
+      logger.w('Permission refusée pour l\'action: $action sur $targetType');
+      return false;
+    }
+
+    // 3. Vérifier la conformité RGPD si nécessaire
+    if (data != null && !checkGDPRCompliance(action, data)) {
+      logger.w('Action non conforme RGPD: $action');
+      return false;
+    }
+
+    // 4. Mettre à jour l'activité de la session
+    await updateActivity();
+
+    // 5. Journaliser la validation réussie
+    logSecurityAction(
+      'validate_action',
+      targetType,
+      targetId,
+      description: 'Validation réussie pour l\'action: $action',
+    );
+
+    return true;
   }
 
   // Vérifier l'intégrité des données sensibles

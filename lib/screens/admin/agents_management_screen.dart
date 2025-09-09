@@ -6,6 +6,8 @@ import '../../models/agent_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
 import '../../services/storage_service.dart';
+import '../../services/authorization_service.dart';
+import '../../services/verification_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/theme.dart';
 import '../../widgets/agent_card.dart';
@@ -491,16 +493,48 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
   // Basculer le statut de certification d'un agent
   Future<void> _toggleCertification(AgentModel agent) async {
     try {
-      final databaseService = Provider.of<DatabaseService>(
-        context,
-        listen: false,
-      );
+      final databaseService = Provider.of<DatabaseService>(context, listen: false);
+      final authorizationService = Provider.of<AuthorizationService>(context, listen: false);
+
+      // Vérifier les permissions
+      final hasPermission = await authorizationService.currentUserHasPermission('certify_agents');
+      if (!hasPermission) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Vous n\'avez pas les permissions nécessaires pour certifier les agents'),
+              backgroundColor: AppTheme.errorColor,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Sauvegarder les anciennes données pour l'audit
+      final oldData = {
+        'fullName': agent.fullName,
+        'isCertified': agent.isCertified,
+      };
 
       // Créer un nouvel agent avec le statut de certification inversé
       final updatedAgent = agent.copyWith(isCertified: !agent.isCertified);
 
       // Mettre à jour l'agent dans la base de données
       await databaseService.updateAgent(updatedAgent);
+
+      // Journaliser l'action
+      await authorizationService.logAdminAction(
+        action: updatedAgent.isCertified ? 'certify_agent' : 'decertify_agent',
+        targetType: 'agent',
+        targetId: agent.id,
+        oldData: oldData,
+        newData: {
+          'isCertified': updatedAgent.isCertified,
+        },
+        description: updatedAgent.isCertified 
+            ? 'Certification de l\'agent ${agent.fullName}' 
+            : 'Retrait de la certification de l\'agent ${agent.fullName}',
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -532,10 +566,22 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
   // Basculer la disponibilité d'un agent
   Future<void> _toggleAvailability(AgentModel agent) async {
     try {
-      final databaseService = Provider.of<DatabaseService>(
-        context,
-        listen: false,
-      );
+      final databaseService = Provider.of<DatabaseService>(context, listen: false);
+      final authorizationService = Provider.of<AuthorizationService>(context, listen: false);
+
+      // Vérifier les permissions
+      final hasPermission = await authorizationService.currentUserHasPermission('toggle_agent_availability');
+      if (!hasPermission) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Vous n\'avez pas les permissions nécessaires pour modifier la disponibilité des agents'),
+              backgroundColor: AppTheme.errorColor,
+            ),
+          );
+        }
+        return;
+      }
 
       // Si on essaie de rendre l'agent indisponible, vérifier s'il a des réservations en cours
       if (agent.isAvailable) {
@@ -576,11 +622,31 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
         }
       }
 
+      // Sauvegarder les anciennes données pour l'audit
+      final oldData = {
+        'fullName': agent.fullName,
+        'isAvailable': agent.isAvailable,
+      };
+
       // Créer un nouvel agent avec le statut de disponibilité inversé
       final updatedAgent = agent.copyWith(isAvailable: !agent.isAvailable);
 
       // Mettre à jour l'agent dans la base de données
       await databaseService.updateAgent(updatedAgent);
+
+      // Journaliser l'action
+      await authorizationService.logAdminAction(
+        action: updatedAgent.isAvailable ? 'set_agent_available' : 'set_agent_unavailable',
+        targetType: 'agent',
+        targetId: agent.id,
+        oldData: oldData,
+        newData: {
+          'isAvailable': updatedAgent.isAvailable,
+        },
+        description: updatedAgent.isAvailable 
+            ? 'Marquage de l\'agent ${agent.fullName} comme disponible' 
+            : 'Marquage de l\'agent ${agent.fullName} comme indisponible',
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -612,40 +678,46 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
   // Supprimer un agent
   Future<void> _deleteAgent(AgentModel agent) async {
     // Stocker les services avant toute opération asynchrone
-    final databaseService = Provider.of<DatabaseService>(
-      context,
-      listen: false,
-    );
+    final databaseService = Provider.of<DatabaseService>(context, listen: false);
     final storageService = Provider.of<StorageService>(context, listen: false);
+    final authorizationService = Provider.of<AuthorizationService>(context, listen: false);
+    final verificationService = Provider.of<VerificationService>(context, listen: false);
 
-    // Demander confirmation
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Confirmer la suppression'),
-            content: Text(
-              'Êtes-vous sûr de vouloir supprimer l\'agent ${agent.fullName} ?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Annuler'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.errorColor,
-                ),
-                child: const Text('Supprimer'),
-              ),
-            ],
+    // Vérifier les permissions
+    final hasPermission = await authorizationService.canDeleteEntity('agent', agent.id);
+    if (!hasPermission) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vous n\'avez pas les permissions nécessaires pour supprimer cet agent'),
+            backgroundColor: AppTheme.errorColor,
           ),
+        );
+      }
+      return;
+    }
+
+    // Demander une double vérification pour l'action critique
+    final verified = await verificationService.requestDoubleVerification(
+      context,
+      action: 'Supprimer l\'agent',
+      targetName: agent.fullName,
+      additionalMessage: 'Cette action est irréversible et supprimera toutes les données associées à cet agent, y compris ses réservations et avis.',
     );
 
-    if (confirmed != true) return;
+    if (!verified) return;
 
     try {
+      // Sauvegarder les anciennes données pour l'audit
+      final oldData = {
+        'fullName': agent.fullName,
+        'profession': agent.profession,
+        'matricule': agent.matricule,
+        'isCertified': agent.isCertified,
+        'isAvailable': agent.isAvailable,
+        'createdAt': agent.createdAt.toIso8601String(),
+      };
+
       // Supprimer l'image de profil si elle existe
       if (agent.profileImageUrl != null) {
         await storageService.deleteImage(agent.profileImageUrl!);
@@ -653,6 +725,15 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
 
       // Supprimer l'agent
       await databaseService.deleteAgent(agent.id);
+
+      // Journaliser l'action
+      await authorizationService.logAdminAction(
+        action: 'delete_agent',
+        targetType: 'agent',
+        targetId: agent.id,
+        oldData: oldData,
+        description: 'Suppression de l\'agent ${agent.fullName}',
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

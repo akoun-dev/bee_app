@@ -7,6 +7,8 @@ import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
 import '../../services/storage_service.dart';
+import '../../services/authorization_service.dart';
+import '../../services/verification_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/theme.dart';
 import '../../widgets/common_widgets.dart';
@@ -156,6 +158,8 @@ class _UsersManagementScreenState extends State<UsersManagementScreen> {
     final databaseService = Provider.of<DatabaseService>(context, listen: false);
     final storageService = Provider.of<StorageService>(context, listen: false);
     final authService = Provider.of<AuthService>(context, listen: false);
+    final authorizationService = Provider.of<AuthorizationService>(context, listen: false);
+    final verificationService = Provider.of<VerificationService>(context, listen: false);
 
     // Vérifier que l'utilisateur n'est pas l'administrateur actuel
     final currentUser = await authService.getCurrentUserData();
@@ -171,31 +175,39 @@ class _UsersManagementScreenState extends State<UsersManagementScreen> {
       return;
     }
 
-    // Demander confirmation
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirmer la suppression'),
-        content: Text('Êtes-vous sûr de vouloir supprimer l\'utilisateur ${user.fullName} ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Annuler'),
+    // Vérifier les permissions
+    final hasPermission = await authorizationService.canDeleteEntity('user', user.uid);
+    if (!hasPermission) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vous n\'avez pas les permissions nécessaires pour supprimer cet utilisateur'),
+            backgroundColor: AppTheme.errorColor,
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.errorColor,
-            ),
-            child: const Text('Supprimer'),
-          ),
-        ],
-      ),
+        );
+      }
+      return;
+    }
+
+    // Demander une double vérification pour l'action critique
+    final verified = await verificationService.requestDoubleVerification(
+      context,
+      action: 'Supprimer l\'utilisateur',
+      targetName: user.fullName,
+      additionalMessage: 'Cette action est irréversible et supprimera toutes les données associées à cet utilisateur.',
     );
 
-    if (confirmed != true) return;
+    if (!verified) return;
 
     try {
+      // Sauvegarder les anciennes données pour l'audit
+      final oldData = {
+        'fullName': user.fullName,
+        'email': user.email,
+        'isAdmin': user.isAdmin,
+        'createdAt': user.createdAt.toIso8601String(),
+      };
+
       // Supprimer l'image de profil si elle existe
       if (user.profileImageUrl != null) {
         await storageService.deleteImage(user.profileImageUrl!);
@@ -203,6 +215,15 @@ class _UsersManagementScreenState extends State<UsersManagementScreen> {
 
       // Supprimer l'utilisateur
       await databaseService.deleteUser(user.uid);
+
+      // Journaliser l'action
+      await authorizationService.logAdminAction(
+        action: 'delete_user',
+        targetType: 'user',
+        targetId: user.uid,
+        oldData: oldData,
+        description: 'Suppression de l\'utilisateur ${user.fullName}',
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
