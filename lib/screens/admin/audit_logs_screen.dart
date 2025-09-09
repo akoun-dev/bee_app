@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../models/audit_log_model.dart';
 import '../../services/audit_service.dart';
 import '../../utils/theme.dart';
-import '../../widgets/common_widgets.dart';
 import '../../widgets/admin_app_bar.dart';
 import '../../widgets/admin_drawer.dart';
+import '../../widgets/common_widgets.dart';
 
 // Écran des logs d'audit pour les administrateurs
 class AuditLogsScreen extends StatefulWidget {

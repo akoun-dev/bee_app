@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../models/audit_log_model.dart';
+
 // Service pour l'audit et les logs des actions administratives
 class AuditService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -185,66 +187,3 @@ class AuditService {
   }
 }
 
-// Modèle pour les logs d'audit
-class AuditLogModel {
-  final String id;
-  final String adminId;
-  final String adminEmail;
-  final String action;
-  final String targetType;
-  final String targetId;
-  final Map<String, dynamic>? oldData;
-  final Map<String, dynamic>? newData;
-  final String? description;
-  final DateTime timestamp;
-  final String? ipAddress;
-  final String? userAgent;
-
-  AuditLogModel({
-    required this.id,
-    required this.adminId,
-    required this.adminEmail,
-    required this.action,
-    required this.targetType,
-    required this.targetId,
-    this.oldData,
-    this.newData,
-    this.description,
-    required this.timestamp,
-    this.ipAddress,
-    this.userAgent,
-  });
-
-  Map<String, dynamic> toMap() {
-    return {
-      'adminId': adminId,
-      'adminEmail': adminEmail,
-      'action': action,
-      'targetType': targetType,
-      'targetId': targetId,
-      'oldData': oldData,
-      'newData': newData,
-      'description': description,
-      'timestamp': timestamp,
-      'ipAddress': ipAddress,
-      'userAgent': userAgent,
-    };
-  }
-
-  factory AuditLogModel.fromMap(Map<String, dynamic> map, String id) {
-    return AuditLogModel(
-      id: id,
-      adminId: map['adminId'] ?? '',
-      adminEmail: map['adminEmail'] ?? '',
-      action: map['action'] ?? '',
-      targetType: map['targetType'] ?? '',
-      targetId: map['targetId'] ?? '',
-      oldData: map['oldData'],
-      newData: map['newData'],
-      description: map['description'],
-      timestamp: (map['timestamp'] as Timestamp).toDate(),
-      ipAddress: map['ipAddress'],
-      userAgent: map['userAgent'],
-    );
-  }
-}
