@@ -102,9 +102,10 @@ class _EnhancedAdminDashboardScreenState extends State<EnhancedAdminDashboardScr
   Future<void> _loadStatistics() async {
     try {
       // Obtenir les statistiques des utilisateurs
-      final users = _databaseService.getAllUsers();
-      final activeUsers = users.where((u) => u.isActive).length;
-      final inactiveUsers = users.where((u) => !u.isActive).length;
+      final usersStream = _databaseService.getAllUsers();
+      final users = await usersStream.first;
+      final activeUsers = users.length; // Tous les utilisateurs sont considérés comme actifs
+      final inactiveUsers = 0; // Pas de propriété isActive dans UserModel
 
       // Obtenir les statistiques des agents
       final agents = await _databaseService.getAllAgents();
@@ -112,11 +113,12 @@ class _EnhancedAdminDashboardScreenState extends State<EnhancedAdminDashboardScr
       final inactiveAgents = agents.where((a) => !a.isAvailable).length;
 
       // Obtenir les statistiques des réservations
-      final reservations = _databaseService.getAllReservations();
-      final pendingReservations = reservations.where((r) => r.status == 'pending').length;
-      final confirmedReservations = reservations.where((r) => r.status == 'confirmed').length;
-      final completedReservations = reservations.where((r) => r.status == 'completed').length;
-      final cancelledReservations = reservations.where((r) => r.status == 'cancelled').length;
+      final reservationsStream = _databaseService.getAllReservations();
+      final reservations = await reservationsStream.first;
+      final pendingReservations = reservations.where((r) => r.status == ReservationModel.statusPending).length;
+      final confirmedReservations = reservations.where((r) => r.status == ReservationModel.statusApproved).length;
+      final completedReservations = reservations.where((r) => r.status == ReservationModel.statusCompleted).length;
+      final cancelledReservations = reservations.where((r) => r.status == ReservationModel.statusCancelled).length;
 
       setState(() {
         _statistics = {
@@ -140,7 +142,8 @@ class _EnhancedAdminDashboardScreenState extends State<EnhancedAdminDashboardScr
 
   Future<void> _loadRecentUsers() async {
     try {
-      final users = _databaseService.getAllUsers();
+      final usersStream = _databaseService.getAllUsers();
+      final users = await usersStream.first;
       setState(() {
         _recentUsers = users.take(10).toList();
       });
@@ -162,7 +165,8 @@ class _EnhancedAdminDashboardScreenState extends State<EnhancedAdminDashboardScr
 
   Future<void> _loadRecentReservations() async {
     try {
-      final reservations = _databaseService.getAllReservations();
+      final reservationsStream = _databaseService.getAllReservations();
+      final reservations = await reservationsStream.first;
       setState(() {
         _recentReservations = reservations.take(10).toList();
       });

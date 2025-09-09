@@ -917,7 +917,7 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
             // Genre
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: gender,
+                initialValue: gender,
                 decoration: const InputDecoration(
                   labelText: 'Genre',
                   prefixIcon: Icon(Icons.wc),
@@ -940,7 +940,7 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
             // Groupe sanguin
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: bloodType,
+                initialValue: bloodType,
                 decoration: const InputDecoration(
                   labelText: 'Groupe sanguin',
                   prefixIcon: Icon(Icons.bloodtype),
@@ -1187,7 +1187,7 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
               style: TextStyle(fontSize: 12),
             ),
             value: isCertified,
-            activeColor: AppTheme.infoColor,
+            activeThumbColor: AppTheme.infoColor,
             onChanged: (value) {
               onCertifiedChanged(value);
             },
@@ -1213,7 +1213,7 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
               style: TextStyle(fontSize: 12),
             ),
             value: isAvailable,
-            activeColor: AppTheme.accentColor,
+            activeThumbColor: AppTheme.accentColor,
             onChanged: (value) {
               onAvailableChanged(value);
             },

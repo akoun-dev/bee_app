@@ -82,7 +82,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
             children: [
               // Filtre par type
               DropdownButtonFormField<String>(
-                value: _selectedFilter,
+                initialValue: _selectedFilter,
                 decoration: const InputDecoration(labelText: 'Type d\'action'),
                 items: const [
                   DropdownMenuItem(value: 'all', child: Text('Tous')),

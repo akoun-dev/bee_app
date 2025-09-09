@@ -336,7 +336,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
               subtitle: const Text('Permettre l\'envoi de notifications aux utilisateurs'),
               value: _enableNotifications,
               onChanged: (value) => setState(() => _enableNotifications = value),
-              activeColor: AppTheme.primaryColor,
+              activeThumbColor: AppTheme.primaryColor,
             ),
 
             // Activer/désactiver les évaluations
@@ -345,7 +345,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
               subtitle: const Text('Permettre aux utilisateurs de noter les agents'),
               value: _enableRatings,
               onChanged: (value) => setState(() => _enableRatings = value),
-              activeColor: AppTheme.primaryColor,
+              activeThumbColor: AppTheme.primaryColor,
             ),
 
             // Activer/désactiver le chat
@@ -354,7 +354,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
               subtitle: const Text('Permettre la communication entre utilisateurs et agents'),
               value: _enableChat,
               onChanged: (value) => setState(() => _enableChat = value),
-              activeColor: AppTheme.primaryColor,
+              activeThumbColor: AppTheme.primaryColor,
             ),
           ],
         ),

@@ -234,7 +234,7 @@ class _DataDeletionManagementScreenState extends State<DataDeletionManagementScr
             
             // Filtre de statut
             DropdownButtonFormField<DeletionStatus?>(
-              value: _filterStatus,
+              initialValue: _filterStatus,
               decoration: const InputDecoration(
                 labelText: 'Statut',
                 border: OutlineInputBorder(),

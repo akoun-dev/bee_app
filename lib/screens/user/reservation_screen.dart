@@ -311,7 +311,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
                 final user = snapshot.data;
                 if (user != null && availabilityService.canModifyAgentAvailability(user)) {
                   return PopupMenuButton<String>(
-                    onSelected: (value) => _handleAdminAction(value),
+                    onSelected: (value) => handleAdminAction(value),
                     itemBuilder: (context) => [
                       const PopupMenuItem(
                         value: 'toggle_availability',
@@ -827,7 +827,9 @@ class _ReservationScreenState extends State<ReservationScreen> {
                       
                       return PrimaryButton(
                         text: AppConstants.submitReservation,
-                        onPressed: canSubmit ? _submitReservation : null,
+                        onPressed: canSubmit ? () async {
+                          await _submitReservation();
+                        } : null,
                         isLoading: _isSubmitting,
                       );
                     },
@@ -838,7 +840,8 @@ class _ReservationScreenState extends State<ReservationScreen> {
               ),
             ),
           ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -967,5 +970,4 @@ class _ReservationScreenState extends State<ReservationScreen> {
       ),
     );
   }
-}
 }

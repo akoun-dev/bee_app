@@ -118,7 +118,7 @@ class _ReportGenerationScreenState extends State<ReportGenerationScreen> {
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      value: _selectedReportType,
+                      initialValue: _selectedReportType,
                       isExpanded: true,
                       decoration: InputDecoration(
                         border: OutlineInputBorder(

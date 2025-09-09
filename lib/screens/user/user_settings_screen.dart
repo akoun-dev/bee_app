@@ -620,7 +620,7 @@ class _UserSettingsScreenState extends State<UserSettingsScreen> {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: fontFamily,
+              initialValue: fontFamily,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),

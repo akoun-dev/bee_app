@@ -428,7 +428,7 @@ class _LocalizationManagementScreenState extends State<LocalizationManagementScr
             
             // Filtre par langue
             DropdownButtonFormField<AppLanguage?>(
-              value: _filterLanguage,
+              initialValue: _filterLanguage,
               decoration: const InputDecoration(
                 labelText: 'Langue',
                 border: OutlineInputBorder(),
@@ -450,7 +450,7 @@ class _LocalizationManagementScreenState extends State<LocalizationManagementScr
             
             // Filtre par région
             DropdownButtonFormField<AppRegion?>(
-              value: _filterRegion,
+              initialValue: _filterRegion,
               decoration: const InputDecoration(
                 labelText: 'Région',
                 border: OutlineInputBorder(),
@@ -472,7 +472,7 @@ class _LocalizationManagementScreenState extends State<LocalizationManagementScr
             
             // Filtre par fuseau horaire
             DropdownButtonFormField<TimeZone?>(
-              value: _filterTimeZone,
+              initialValue: _filterTimeZone,
               decoration: const InputDecoration(
                 labelText: 'Fuseau horaire',
                 border: OutlineInputBorder(),
@@ -709,16 +709,16 @@ class _LocalizationManagementScreenState extends State<LocalizationManagementScr
   Future<void> _editUserLocalization(UserModel user, LocalizationModel? currentLocalization) async {
     try {
       // Créer une configuration par défaut si nécessaire
-      final localization = currentLocalization ?? 
+      final localization = currentLocalization ??
           LocalizationModel(
             userId: user.uid,
             language: AppLanguage.french,
             region: AppRegion.france,
             timeZone: TimeZone.europeParis,
-            dateFormat: LocalizationFormat.european,
-            timeFormat: TimeFormat.hour24,
-            numberFormat: NumberFormat.european,
-            currencyFormat: CurrencyFormat.european,
+            dateFormat: DateFormat.ddMMyyyy,
+            timeFormat: TimeFormat.HHmm24,
+            numberFormat: NumberFormat.spaceComma,
+            currencyFormat: CurrencyFormat.eurSymbolBefore,
             measurementSystem: MeasurementSystem.metric,
             lastUpdated: DateTime.now(),
           );
@@ -746,7 +746,7 @@ class _LocalizationManagementScreenState extends State<LocalizationManagementScr
                     
                     // Langue
                     DropdownButtonFormField<AppLanguage>(
-                      value: selectedLanguage,
+                      initialValue: selectedLanguage,
                       decoration: const InputDecoration(
                         labelText: 'Langue',
                         border: OutlineInputBorder(),
@@ -767,7 +767,7 @@ class _LocalizationManagementScreenState extends State<LocalizationManagementScr
                     
                     // Région
                     DropdownButtonFormField<AppRegion>(
-                      value: selectedRegion,
+                      initialValue: selectedRegion,
                       decoration: const InputDecoration(
                         labelText: 'Région',
                         border: OutlineInputBorder(),
@@ -788,7 +788,7 @@ class _LocalizationManagementScreenState extends State<LocalizationManagementScr
                     
                     // Fuseau horaire
                     DropdownButtonFormField<TimeZone>(
-                      value: selectedTimeZone,
+                      initialValue: selectedTimeZone,
                       decoration: const InputDecoration(
                         labelText: 'Fuseau horaire',
                         border: OutlineInputBorder(),
@@ -825,9 +825,9 @@ class _LocalizationManagementScreenState extends State<LocalizationManagementScr
 
       if (shouldUpdate == true) {
         // Mettre à jour la configuration
-        await _localizationService.setLanguage(selectedLanguage);
-        await _localizationService.setRegion(selectedRegion);
-        await _localizationService.setTimeZone(selectedTimeZone);
+        await _localizationService.updateLanguage(selectedLanguage);
+        await _localizationService.updateRegion(selectedRegion);
+        await _localizationService.updateTimeZone(selectedTimeZone);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

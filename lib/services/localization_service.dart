@@ -480,4 +480,21 @@ class LocalizationService {
     // qui écoute les changements depuis Firestore ou SharedPreferences
     return Stream.value(_currentConfig);
   }
+
+  // Obtenir la configuration de localisation d'un utilisateur spécifique
+  Future<LocalizationModel?> getUserLocalization(String userId) async {
+    try {
+      // Récupérer les préférences de l'utilisateur depuis Firestore
+      final userPrefs = await _databaseService.getUserPreferences(userId);
+      
+      if (userPrefs != null) {
+        return LocalizationModel.fromMap(userPrefs.toMap());
+      }
+      
+      return null;
+    } catch (e) {
+      debugPrint('Erreur lors de la récupération de la localisation de l\'utilisateur $userId: $e');
+      return null;
+    }
+  }
 }

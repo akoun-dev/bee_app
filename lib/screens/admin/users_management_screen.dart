@@ -315,7 +315,7 @@ class _UsersManagementScreenState extends State<UsersManagementScreen> {
                     });
                   },
                   dense: true,
-                  activeColor: AppTheme.primaryColor,
+                  activeThumbColor: AppTheme.primaryColor,
                 ),
               ],
             ),
