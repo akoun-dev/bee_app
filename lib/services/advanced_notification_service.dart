@@ -3,6 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:convert';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:http/http.dart' as http;
 
 // Service avancé pour la gestion des notifications
@@ -81,8 +82,13 @@ class AdvancedNotificationService extends ChangeNotifier {
       // Écouter les changements de token
       _messaging.onTokenRefresh.listen((token) {
         _fcmToken = token;
-        _updateUserToken(token);
+        _registerToken(token);
       });
+
+      // Enregistrer le token initial côté serveur
+      if (_fcmToken != null) {
+        await _registerToken(_fcmToken!);
+      }
     }
   }
 
@@ -204,53 +210,14 @@ class AdvancedNotificationService extends ChangeNotifier {
     Map<String, dynamic>? data,
   }) async {
     try {
-      // Créer le document de notification
-      final notificationDoc = await _firestore.collection('admin_notifications').add({
+      await FirebaseFunctions.instance
+          .httpsCallable('sendAdminNotification')
+          .call({
         'title': title,
         'message': message,
         'targetType': targetType,
         'data': data ?? {},
-        'sentAt': FieldValue.serverTimestamp(),
-        'status': 'sending',
       });
-
-      // Obtenir les tokens des utilisateurs cibles
-      List<String> tokens = [];
-      
-      if (targetType == 'all' || targetType == 'users') {
-        final usersSnapshot = await _firestore
-            .collection('users')
-            .where('fcmToken', isNotEqualTo: null)
-            .get();
-        
-        tokens.addAll(usersSnapshot.docs
-            .map((doc) => doc.data()['fcmToken'] as String?)
-            .where((token) => token != null)
-            .cast<String>());
-      }
-
-      if (targetType == 'all' || targetType == 'agents') {
-        final agentsSnapshot = await _firestore
-            .collection('agents')
-            .where('fcmToken', isNotEqualTo: null)
-            .get();
-        
-        tokens.addAll(agentsSnapshot.docs
-            .map((doc) => doc.data()['fcmToken'] as String?)
-            .where((token) => token != null)
-            .cast<String>());
-      }
-
-      // Envoyer les notifications par batch
-      await _sendBatchNotifications(tokens, title, message, data ?? {});
-
-      // Mettre à jour le statut
-      await notificationDoc.update({
-        'status': 'sent',
-        'recipientCount': tokens.length,
-        'completedAt': FieldValue.serverTimestamp(),
-      });
-
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Erreur lors de l\'envoi de la notification admin: $e');
@@ -392,9 +359,16 @@ class AdvancedNotificationService extends ChangeNotifier {
   }
 
   // Mettre à jour le token de l'utilisateur
-  Future<void> _updateUserToken(String token) async {
-    // Cette méthode devrait être appelée avec l'ID de l'utilisateur actuel
-    // Pour l'instant, c'est un placeholder
+  Future<void> _registerToken(String token) async {
+    try {
+      await FirebaseFunctions.instance
+          .httpsCallable('registerToken')
+          .call({'token': token});
+    } catch (e) {
+      if (kDebugMode) {
+        print("Erreur lors de l'enregistrement du token: $e");
+      }
+    }
   }
 
   // Obtenir l'historique des notifications envoyées
