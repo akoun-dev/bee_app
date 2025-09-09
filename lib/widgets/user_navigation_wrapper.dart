@@ -34,16 +34,69 @@ class UserNavigationWrapper extends StatelessWidget {
     // Vérifier si l'enfant est déjà un Scaffold
     if (child is Scaffold) {
       final scaffoldChild = child as Scaffold;
+      final AppBar? base = scaffoldChild.appBar as AppBar?;
+
+      AppBar? merged;
+      if (showBackButton || title != null || actions != null) {
+        merged = AppBar(
+          title: title != null ? Text(title!) : base?.title,
+          actions: [
+            ...?base?.actions,
+            ...?actions,
+          ],
+          leading: showBackButton
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () {
+                    final router = GoRouter.of(context);
+                    if (router.canPop()) {
+                      router.pop();
+                    } else {
+                      router.go('/');
+                    }
+                  },
+                )
+              : base?.leading,
+          backgroundColor: base?.backgroundColor,
+          foregroundColor: base?.foregroundColor,
+          elevation: base?.elevation,
+          scrolledUnderElevation: base?.scrolledUnderElevation,
+          shadowColor: base?.shadowColor,
+          surfaceTintColor: base?.surfaceTintColor,
+          shape: base?.shape,
+          bottom: base?.bottom,
+          centerTitle: base?.centerTitle,
+          titleSpacing: base?.titleSpacing,
+          toolbarHeight: base?.toolbarHeight,
+          toolbarOpacity: base?.toolbarOpacity,
+          leadingWidth: base?.leadingWidth,
+          primary: base?.primary ?? true,
+          automaticallyImplyLeading:
+              base?.automaticallyImplyLeading ?? true,
+          flexibleSpace: base?.flexibleSpace,
+          systemOverlayStyle: base?.systemOverlayStyle,
+          forceMaterialTransparency:
+              base?.forceMaterialTransparency ?? false,
+          excludeHeaderSemantics:
+              base?.excludeHeaderSemantics ?? false,
+          titleTextStyle: base?.titleTextStyle,
+          iconTheme: base?.iconTheme,
+          actionsIconTheme: base?.actionsIconTheme,
+        );
+      }
+
       return Scaffold(
-        // Ne pas ajouter d'AppBar si l'enfant en a déjà un
-        appBar: scaffoldChild.appBar,
+        appBar: merged ?? base,
         body: scaffoldChild.body,
         backgroundColor: backgroundColor ?? scaffoldChild.backgroundColor,
         bottomNavigationBar: UserBottomNavigation(
           currentIndex: currentIndex,
         ),
-        floatingActionButton: floatingActionButton ?? scaffoldChild.floatingActionButton,
-        floatingActionButtonLocation: floatingActionButtonLocation ?? scaffoldChild.floatingActionButtonLocation,
+        floatingActionButton:
+            floatingActionButton ?? scaffoldChild.floatingActionButton,
+        floatingActionButtonLocation:
+            floatingActionButtonLocation ??
+                scaffoldChild.floatingActionButtonLocation,
       );
     } else {
       // Si l'enfant n'est pas un Scaffold, utiliser l'AppBar fourni
