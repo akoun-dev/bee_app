@@ -5,6 +5,7 @@ import '../services/permission_service.dart';
 import '../services/security_service.dart';
 import '../services/audit_service.dart';
 import '../utils/constants.dart';
+import '../models/user_model.dart';
 
 final logger = Logger();
 
@@ -219,7 +220,26 @@ class AuthorizationService extends ChangeNotifier {
     final currentUser = await _authService.getCurrentUserData();
     if (currentUser == null) return {};
     
-    return _permissionService._getUserPermissions(currentUser);
+    // Calculer les permissions manuellement sans utiliser la réflexion
+    return _calculateUserPermissions(currentUser);
+  }
+
+  // Méthode pour calculer les permissions d'un utilisateur sans réflexion
+  Set<String> _calculateUserPermissions(UserModel user) {
+    Set<String> permissions = {};
+
+    // Si l'utilisateur est admin mais n'a pas de permissions personnalisées,
+    // utiliser les permissions par défaut du rôle admin
+    if (user.isAdmin && (user.permissions == null || user.permissions!.isEmpty)) {
+      permissions.addAll(PermissionService.rolePermissions['admin'] ?? []);
+    } else if (user.permissions != null) {
+      permissions.addAll(user.permissions!);
+    }
+
+    // Ajouter les permissions de base pour tous les utilisateurs
+    permissions.addAll(PermissionService.rolePermissions['user'] ?? []);
+
+    return permissions;
   }
 
   // Obtenir le rôle effectif de l'utilisateur actuel

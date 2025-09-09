@@ -13,8 +13,8 @@ class AuditService {
     _auditCollection = _firestore.collection('audit_logs');
   }
 
-  // Enregistrer une action administrative
-  Future<void> logAdminAction({
+  // Enregistrer une action administrative (méthode générique)
+  Future<void> logAction({
     required String adminId,
     required String adminEmail,
     required String action,
@@ -23,6 +23,9 @@ class AuditService {
     Map<String, dynamic>? oldData,
     Map<String, dynamic>? newData,
     String? description,
+    String? ipAddress,
+    String? userAgent,
+    Map<String, dynamic>? metadata,
   }) async {
     try {
       final auditLog = AuditLogModel(
@@ -36,8 +39,8 @@ class AuditService {
         newData: newData,
         description: description,
         timestamp: DateTime.now(),
-        ipAddress: await _getClientIP(),
-        userAgent: await _getUserAgent(),
+        ipAddress: ipAddress ?? await _getClientIP(),
+        userAgent: userAgent ?? await _getUserAgent(),
       );
 
       await _auditCollection.add(auditLog.toMap());
@@ -45,6 +48,29 @@ class AuditService {
       // En cas d'erreur, on ne veut pas bloquer l'action principale
       logger.w('Erreur lors de l\'enregistrement du log d\'audit: $e');
     }
+  }
+
+  // Enregistrer une action administrative (méthode spécifique pour compatibilité)
+  Future<void> logAdminAction({
+    required String adminId,
+    required String adminEmail,
+    required String action,
+    required String targetType, // 'agent', 'user', 'reservation', 'settings'
+    required String targetId,
+    Map<String, dynamic>? oldData,
+    Map<String, dynamic>? newData,
+    String? description,
+  }) async {
+    await logAction(
+      adminId: adminId,
+      adminEmail: adminEmail,
+      action: action,
+      targetType: targetType,
+      targetId: targetId,
+      oldData: oldData,
+      newData: newData,
+      description: description,
+    );
   }
 
   // Récupérer les logs d'audit avec pagination
@@ -80,6 +106,21 @@ class AuditService {
     query = query.limit(limit);
 
     final snapshot = await query.get();
+    return snapshot.docs
+        .map((doc) => AuditLogModel.fromMap(
+              doc.data() as Map<String, dynamic>,
+              doc.id,
+            ))
+        .toList();
+  }
+
+  // Récupérer les logs récents (pour le dashboard)
+  Future<List<AuditLogModel>> getRecentLogs({int limit = 20}) async {
+    final snapshot = await _auditCollection
+        .orderBy('timestamp', descending: true)
+        .limit(limit)
+        .get();
+
     return snapshot.docs
         .map((doc) => AuditLogModel.fromMap(
               doc.data() as Map<String, dynamic>,
@@ -188,4 +229,3 @@ class AuditService {
     return null;
   }
 }
-

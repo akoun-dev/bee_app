@@ -92,7 +92,7 @@ class ConsentModel {
           purpose: 'Fonctionnement technique',
           required: true,
         ),
-        'data_sharing': ConsentData(
+        'dataSharing': ConsentData(
           granted: false,
           grantedAt: null,
           expiresAt: null,
@@ -244,6 +244,12 @@ class ConsentData {
     return true;
   }
 
+  // Vérifier si le consentement est expiré
+  bool isExpired() {
+    if (expiresAt == null) return false;
+    return DateTime.now().isAfter(expiresAt!);
+  }
+
   // Copie avec modification
   ConsentData copyWith({
     bool? granted,
@@ -271,7 +277,7 @@ enum ConsentType {
   location,
   notifications,
   cookies,
-  data_sharing,
+  dataSharing,
   personalization,
 }
 
@@ -289,7 +295,7 @@ extension ConsentTypeExtension on ConsentType {
         return 'Notifications';
       case ConsentType.cookies:
         return 'Cookies';
-      case ConsentType.data_sharing:
+      case ConsentType.dataSharing:
         return 'Partage de données';
       case ConsentType.personalization:
         return 'Personnalisation';
@@ -308,8 +314,8 @@ extension ConsentTypeExtension on ConsentType {
         return 'notifications';
       case ConsentType.cookies:
         return 'cookies';
-      case ConsentType.data_sharing:
-        return 'data_sharing';
+      case ConsentType.dataSharing:
+        return 'dataSharing';
       case ConsentType.personalization:
         return 'personalization';
     }
@@ -327,7 +333,7 @@ extension ConsentTypeExtension on ConsentType {
         return Icons.notifications;
       case ConsentType.cookies:
         return Icons.cookie;
-      case ConsentType.data_sharing:
+      case ConsentType.dataSharing:
         return Icons.share;
       case ConsentType.personalization:
         return Icons.person;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:intl/intl.dart';
+import 'dart:ui' as ui;
+import 'package:intl/intl.dart' as intl;
 import '../models/localization_model.dart';
 import 'auth_service.dart';
 import 'database_service.dart';
@@ -44,22 +45,25 @@ class LocalizationService {
   // Charger la configuration de localisation
   Future<void> _loadConfiguration() async {
     try {
-      final currentUser = _authService.currentUser;
+      final currentUser = await _authService.getCurrentUserData();
       
       if (currentUser != null) {
         // Charger la configuration depuis Firestore pour l'utilisateur connecté
-        _currentConfig = await _databaseService.getUserLocalization(currentUser.uid);
+        final userPrefs = await _databaseService.getUserPreferences(currentUser.uid);
+        _currentConfig = userPrefs != null 
+            ? LocalizationModel.fromMap(userPrefs.toMap())
+            : null;
         
         if (_currentConfig == null) {
           // Créer une configuration par défaut selon la locale du système
-          final systemLocale = PlatformDispatcher.instance.locale;
+          final systemLocale = ui.PlatformDispatcher.instance.locale;
           _currentConfig = LocalizationModel.createDefault(
             currentUser.uid,
             systemLocale,
           );
           
           // Sauvegarder la configuration par défaut
-          await _databaseService.updateUserLocalization(currentUser.uid, _currentConfig!);
+          await _databaseService.updateUserPreferences(currentUser.uid, _currentConfig!.toMap());
         }
       } else {
         // Charger la configuration depuis le stockage local pour les utilisateurs non connectés
@@ -87,7 +91,7 @@ class LocalizationService {
       
       // Note: Ceci est une version simplifiée. Dans une vraie application,
       // vous devriez désérialiser correctement le JSON en LocalizationModel
-      final systemLocale = PlatformDispatcher.instance.locale;
+      final systemLocale = ui.PlatformDispatcher.instance.locale;
       return LocalizationModel.createDefault('guest', systemLocale);
     } catch (e) {
       debugPrint('Erreur lors du chargement de la configuration locale: $e');
@@ -131,7 +135,7 @@ class LocalizationService {
   // Mettre à jour la langue
   Future<LocalizationModel> updateLanguage(AppLanguage newLanguage) async {
     try {
-      final currentUser = _authService.currentUser;
+      final currentUser = await _authService.getCurrentUserData();
       final oldConfig = _currentConfig;
       
       if (oldConfig == null) {
@@ -144,10 +148,10 @@ class LocalizationService {
 
       if (currentUser != null) {
         // Sauvegarder dans Firestore pour l'utilisateur connecté
-        await _databaseService.updateUserLocalization(currentUser.uid, newConfig);
+        await _databaseService.updateUserPreferences(currentUser.uid, newConfig.toMap());
         
         // Logger le changement
-        await _auditService.logAction(
+        await _auditService.logAdminAction(
           adminId: currentUser.uid,
           adminEmail: currentUser.email ?? 'Unknown',
           action: 'update_language',
@@ -175,7 +179,7 @@ class LocalizationService {
   // Mettre à jour la région
   Future<LocalizationModel> updateRegion(AppRegion newRegion) async {
     try {
-      final currentUser = _authService.currentUser;
+      final currentUser = await _authService.getCurrentUserData();
       final oldConfig = _currentConfig;
       
       if (oldConfig == null) {
@@ -188,10 +192,10 @@ class LocalizationService {
 
       if (currentUser != null) {
         // Sauvegarder dans Firestore pour l'utilisateur connecté
-        await _databaseService.updateUserLocalization(currentUser.uid, newConfig);
+        await _databaseService.updateUserPreferences(currentUser.uid, newConfig.toMap());
         
         // Logger le changement
-        await _auditService.logAction(
+        await _auditService.logAdminAction(
           adminId: currentUser.uid,
           adminEmail: currentUser.email ?? 'Unknown',
           action: 'update_region',
@@ -219,7 +223,7 @@ class LocalizationService {
   // Mettre à jour le fuseau horaire
   Future<LocalizationModel> updateTimeZone(TimeZone newTimeZone) async {
     try {
-      final currentUser = _authService.currentUser;
+      final currentUser = await _authService.getCurrentUserData();
       final oldConfig = _currentConfig;
       
       if (oldConfig == null) {
@@ -232,10 +236,10 @@ class LocalizationService {
 
       if (currentUser != null) {
         // Sauvegarder dans Firestore pour l'utilisateur connecté
-        await _databaseService.updateUserLocalization(currentUser.uid, newConfig);
+        await _databaseService.updateUserPreferences(currentUser.uid, newConfig.toMap());
         
         // Logger le changement
-        await _auditService.logAction(
+        await _auditService.logAdminAction(
           adminId: currentUser.uid,
           adminEmail: currentUser.email ?? 'Unknown',
           action: 'update_timezone',
@@ -283,7 +287,7 @@ class LocalizationService {
   // Formater une date selon la configuration actuelle
   String formatDate(DateTime date) {
     return _currentConfig?.formatDate(date) ?? 
-        DateFormat('dd/MM/yyyy').format(date);
+        intl.DateFormat('dd/MM/yyyy').format(date);
   }
 
   // Formater une heure selon la configuration actuelle
@@ -337,7 +341,7 @@ class LocalizationService {
   // Détecter automatiquement la langue et la région
   Future<LocalizationModel> detectAndSetLocale() async {
     try {
-      final systemLocale = PlatformDispatcher.instance.locale;
+      final systemLocale = ui.PlatformDispatcher.instance.locale;
       
       // Détecter la langue
       AppLanguage detectedLanguage = AppLanguage.french;
@@ -362,16 +366,16 @@ class LocalizationService {
         language: detectedLanguage,
         region: detectedRegion,
       ) ?? LocalizationModel.createDefault(
-        _authService.currentUser?.uid ?? 'guest',
+        (await _authService.getCurrentUserData())?.uid ?? 'guest',
         systemLocale,
       );
 
       _currentConfig = newConfig;
 
       // Sauvegarder la configuration
-      final currentUser = _authService.currentUser;
+      final currentUser = await _authService.getCurrentUserData();
       if (currentUser != null) {
-        await _databaseService.updateUserLocalization(currentUser.uid, newConfig);
+        await _databaseService.updateUserPreferences(currentUser.uid, newConfig.toMap());
       } else {
         await _saveLocalConfiguration(newConfig);
       }
@@ -427,15 +431,15 @@ class LocalizationService {
       'currencyFormat': _currentConfig?.currencyFormat.name,
       'measurementSystem': _currentConfig?.measurementSystem.name,
       'isRTL': isCurrentLanguageRTL(),
-      'systemLocale': PlatformDispatcher.instance.locale.toString(),
+      'systemLocale': ui.PlatformDispatcher.instance.locale.toString(),
     };
   }
 
   // Réinitialiser la configuration aux valeurs par défaut
   Future<LocalizationModel> resetToDefaults() async {
     try {
-      final currentUser = _authService.currentUser;
-      final systemLocale = PlatformDispatcher.instance.locale;
+      final currentUser = await _authService.getCurrentUserData();
+      final systemLocale = ui.PlatformDispatcher.instance.locale;
       
       // Créer une configuration par défaut
       final defaultConfig = LocalizationModel.createDefault(
@@ -447,10 +451,10 @@ class LocalizationService {
 
       if (currentUser != null) {
         // Sauvegarder dans Firestore pour l'utilisateur connecté
-        await _databaseService.updateUserLocalization(currentUser.uid, defaultConfig);
+        await _databaseService.updateUserPreferences(currentUser.uid, defaultConfig.toMap());
         
         // Logger la réinitialisation
-        await _auditService.logAction(
+        await _auditService.logAdminAction(
           adminId: currentUser.uid,
           adminEmail: currentUser.email ?? 'Unknown',
           action: 'reset_localization',

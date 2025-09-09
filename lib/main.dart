@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
 import 'services/database_service.dart';
@@ -21,6 +20,7 @@ import 'services/localization_service.dart';
 import 'services/authorization_service.dart';
 import 'services/security_service.dart';
 import 'services/verification_service.dart';
+import 'services/permission_service.dart';
 import 'utils/routes.dart';
 import 'utils/constants.dart';
 
@@ -59,34 +59,51 @@ class _BeeAppState extends State<BeeApp> {
   final SettingsService _settingsService = SettingsService();
   final ThemeService _themeService = ThemeService();
   final RecommendationService _recommendationService = RecommendationService();
-  final AuthorizationService _authorizationService = AuthorizationService();
-  final SecurityService _securityService = SecurityService();
-  final VerificationService _verificationService = VerificationService();
+  
+  // Instance de Firestore
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Services avec dépendances
-  late final AgentAvailabilityService _availabilityService;
   late final DatabaseService _databaseService;
+  late final AgentAvailabilityService _availabilityService;
   late final AuditService _auditService;
   late final ConsentService _consentService;
   late final DataDeletionService _dataDeletionService;
   late final LocalizationService _localizationService;
-
-  // Instance de Firestore
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  late final AuthorizationService _authorizationService;
+  late final SecurityService _securityService;
+  late final VerificationService _verificationService;
 
   @override
   void initState() {
     super.initState();
     
     // Initialiser les services avec dépendances
+    // D'abord créer le DatabaseService avec un AgentAvailabilityService temporaire
+    _databaseService = DatabaseService.withoutAvailability();
+    
+    // Puis créer l'AgentAvailabilityService avec le DatabaseService
     _availabilityService = AgentAvailabilityService(
-      DatabaseService.withoutAvailability(),
+      _databaseService,
       _firestore,
     );
+    
+    // Mettre à jour le DatabaseService avec le bon AgentAvailabilityService
     _databaseService = DatabaseService(_availabilityService);
-    _auditService = AuditService(
-      firestore: _firestore,
+    
+    // Initialiser les autres services
+    _auditService = AuditService();
+    _authorizationService = AuthorizationService(
       authService: _authService,
+      permissionService: PermissionService(), // Créer une instance
+      securityService: SecurityService(), // Créer une instance
+      auditService: _auditService,
+    );
+    _securityService = SecurityService();
+    _verificationService = VerificationService(
+      authService: _authService,
+      securityService: _securityService,
+      auditService: _auditService,
     );
     _consentService = ConsentService(
       firestore: _firestore,
@@ -122,17 +139,11 @@ class _BeeAppState extends State<BeeApp> {
       // Initialiser le service de thème
       await _themeService.initialize();
 
-      // Initialiser le service d'audit
-      await _auditService.initialize();
-
-      // Initialiser le service de localisation
-      await _localizationService.initialize();
-
       // Initialiser le service de sécurité
       await _securityService.initialize();
 
-      // Initialiser le service de vérification
-      await _verificationService.initialize();
+      // Initialiser le service de localisation
+      await _localizationService.initialize();
 
       // Effectuer une première mise à jour de la disponibilité des agents
       try {
@@ -305,11 +316,11 @@ class _BeeAppState extends State<BeeApp> {
               return MediaQuery(
                 data: MediaQuery.of(context).copyWith(
                   textScaler: TextScaler.linear(themeService.textScaleFactor),
-                  // Appliquer la direction du texte selon la langue
-                  textDirection: localizationService.getTextDirection(),
                 ),
                 child: Directionality(
-                  textDirection: localizationService.getTextDirection(),
+                  textDirection: localizationService.isCurrentLanguageRTL() 
+                    ? TextDirection.rtl 
+                    : TextDirection.ltr,
                   child: child!,
                 ),
               );

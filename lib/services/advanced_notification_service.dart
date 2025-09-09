@@ -67,12 +67,16 @@ class AdvancedNotificationService extends ChangeNotifier {
     // Demander les permissions
     final settings = await _messaging.requestPermission(
       alert: true,
+      announcement: false,
       badge: true,
-      sound: true,
+      carPlay: false,
+      criticalAlert: false,
       provisional: false,
+      sound: true,
     );
 
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+    if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+        settings.authorizationStatus == AuthorizationStatus.provisional) {
       // Obtenir le token FCM
       _fcmToken = await _messaging.getToken();
       if (kDebugMode) {
@@ -366,7 +370,7 @@ class AdvancedNotificationService extends ChangeNotifier {
           .call({'token': token});
     } catch (e) {
       if (kDebugMode) {
-        print("Erreur lors de l'enregistrement du token: $e");
+        debugPrint("Erreur lors de l'enregistrement du token: $e");
       }
     }
   }
@@ -385,7 +389,7 @@ class AdvancedNotificationService extends ChangeNotifier {
       return snapshot.docs
           .map((doc) => {
                 'id': doc.id,
-                ...doc.data(),
+                ...doc.data() as Map<String, dynamic>,
               })
           .toList();
     } catch (e) {
@@ -415,7 +419,7 @@ class AdvancedNotificationService extends ChangeNotifier {
       'title': title,
       'body': body,
       'data': data ?? {},
-      'scheduledTime': scheduledTime,
+      'scheduledTime': Timestamp.fromDate(scheduledTime),
       'status': 'scheduled',
       'createdAt': FieldValue.serverTimestamp(),
     });

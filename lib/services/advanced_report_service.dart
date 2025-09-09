@@ -25,29 +25,29 @@ class AdvancedReportService {
     // Récupérer tous les agents
     final agentsSnapshot = await _firestore.collection('agents').get();
     final agents = agentsSnapshot.docs
-        .map((doc) => AgentModel.fromMap(doc.data(), doc.id))
+        .map((doc) => AgentModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
         .toList();
 
     // Récupérer les réservations pour la période
     final reservationsSnapshot = await _firestore
         .collection('reservations')
-        .where('createdAt', isGreaterThanOrEqualTo: startDate)
-        .where('createdAt', isLessThanOrEqualTo: endDate)
+        .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+        .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
         .get();
 
     final reservations = reservationsSnapshot.docs
-        .map((doc) => ReservationModel.fromMap(doc.data(), doc.id))
+        .map((doc) => ReservationModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
         .toList();
 
     // Récupérer les avis pour la période
     final reviewsSnapshot = await _firestore
         .collection('reviews')
-        .where('createdAt', isGreaterThanOrEqualTo: startDate)
-        .where('createdAt', isLessThanOrEqualTo: endDate)
+        .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+        .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
         .get();
 
     final reviews = reviewsSnapshot.docs
-        .map((doc) => ReviewModel.fromMap(doc.data(), doc.id))
+        .map((doc) => ReviewModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
         .toList();
 
     // Calculer les métriques par agent
@@ -63,15 +63,15 @@ class AdvancedReportService {
           .toList();
 
       final completedReservations = agentReservations
-          .where((r) => r.status == ReservationModel.statusCompleted)
+          .where((r) => r.status == 'completed')
           .length;
 
       final cancelledReservations = agentReservations
-          .where((r) => r.status == ReservationModel.statusCancelled)
+          .where((r) => r.status == 'cancelled')
           .length;
 
       final totalRevenue = agentReservations
-          .where((r) => r.status == ReservationModel.statusCompleted)
+          .where((r) => r.status == 'completed')
           .fold<double>(0.0, (sum, r) => sum + (r.totalPrice ?? 0.0));
 
       final averageRating = agentReviews.isNotEmpty
@@ -104,10 +104,10 @@ class AdvancedReportService {
             .length,
         'totalReservations': reservations.length,
         'totalRevenue': agentMetrics.values
-            .fold<double>(0.0, (sum, m) => sum + m['totalRevenue']),
+            .fold<double>(0.0, (sum, m) => sum + m['totalRevenue'] as double),
         'averageCompletionRate': agentMetrics.values.isNotEmpty
             ? agentMetrics.values
-                .fold<double>(0.0, (sum, m) => sum + m['completionRate']) / agentMetrics.length
+                .fold<double>(0.0, (sum, m) => sum + m['completionRate'] as double) / agentMetrics.length
             : 0.0,
       },
       'agentMetrics': agentMetrics,
@@ -125,13 +125,13 @@ class AdvancedReportService {
     // Récupérer les réservations complétées
     final reservationsSnapshot = await _firestore
         .collection('reservations')
-        .where('status', isEqualTo: ReservationModel.statusCompleted)
-        .where('createdAt', isGreaterThanOrEqualTo: startDate)
-        .where('createdAt', isLessThanOrEqualTo: endDate)
+        .where('status', isEqualTo: 'completed')
+        .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+        .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
         .get();
 
     final reservations = reservationsSnapshot.docs
-        .map((doc) => ReservationModel.fromMap(doc.data(), doc.id))
+        .map((doc) => ReservationModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
         .toList();
 
     // Calculer les revenus par jour
@@ -194,7 +194,7 @@ class AdvancedReportService {
     for (final entry in sortedAgents.take(10)) {
       final agentDoc = await _firestore.collection('agents').doc(entry.key).get();
       if (agentDoc.exists) {
-        final agent = AgentModel.fromMap(agentDoc.data()!, agentDoc.id);
+        final agent = AgentModel.fromMap(agentDoc.data() as Map<String, dynamic>, agentDoc.id);
         topAgents.add({
           'agent': agent,
           'revenue': entry.value,
@@ -219,18 +219,18 @@ class AdvancedReportService {
     // Récupérer les utilisateurs
     final usersSnapshot = await _firestore.collection('users').get();
     final users = usersSnapshot.docs
-        .map((doc) => UserModel.fromMap(doc.data(), doc.id))
+        .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
         .toList();
 
     // Récupérer les réservations
     final reservationsSnapshot = await _firestore
         .collection('reservations')
-        .where('createdAt', isGreaterThanOrEqualTo: startDate)
-        .where('createdAt', isLessThanOrEqualTo: endDate)
+        .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+        .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
         .get();
 
     final reservations = reservationsSnapshot.docs
-        .map((doc) => ReservationModel.fromMap(doc.data(), doc.id))
+        .map((doc) => ReservationModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
         .toList();
 
     // Calculer les métriques

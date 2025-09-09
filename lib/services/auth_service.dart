@@ -1,15 +1,16 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import '../models/user_model.dart';
+import '../models/user_preferences_model.dart';
 import '../utils/constants.dart';
 
 final logger = Logger();
 
 // Service pour gérer l'authentification des utilisateurs
 class AuthService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final auth.FirebaseAuth _auth = auth.FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Constructeur qui configure la persistance de l'authentification
@@ -23,22 +24,22 @@ class AuthService {
     try {
       // setPersistence uniquement sur le web
       if (kIsWeb) {
-        await _auth.setPersistence(Persistence.LOCAL);
+        await _auth.setPersistence(auth.Persistence.LOCAL);
         logger.i('Persistance d\'authentification configurée avec succès');
       }
     } catch (e) {
       logger.e(
-        'Erreur lors de la configuration de la persistance: \\${e.toString()}',
+        'Erreur lors de la configuration de la persistance: ${e.toString()}',
       );
       // En cas d'erreur, on continue quand même car la persistance par défaut est généralement LOCAL
     }
   }
 
   // Obtenir l'utilisateur actuel
-  User? get currentUser => _auth.currentUser;
+  auth.User? get currentUser => _auth.currentUser;
 
   // Stream pour suivre l'état de l'authentification
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  Stream<auth.User?> get authStateChanges => _auth.authStateChanges();
 
   // Vérifier si l'utilisateur est déjà connecté
   Future<bool> isUserLoggedIn() async {
@@ -106,7 +107,7 @@ class AuthService {
       return user;
     } catch (e) {
       // Capturer spécifiquement les erreurs d'authentification Firebase
-      if (e is FirebaseAuthException) {
+      if (e is auth.FirebaseAuthException) {
         switch (e.code) {
           case 'email-already-in-use':
             throw Exception(AppConstants.errorEmailAlreadyInUse);
@@ -186,7 +187,7 @@ class AuthService {
       );
     } catch (e) {
       // Capturer spécifiquement les erreurs d'authentification Firebase
-      if (e is FirebaseAuthException) {
+      if (e is auth.FirebaseAuthException) {
         switch (e.code) {
           case 'user-not-found':
             throw Exception(AppConstants.errorUserNotFound);
@@ -218,7 +219,7 @@ class AuthService {
 
       await user.sendEmailVerification();
     } catch (e) {
-      if (e is FirebaseAuthException) {
+      if (e is auth.FirebaseAuthException) {
         switch (e.code) {
           case 'too-many-requests':
             throw Exception(AppConstants.errorTooManyRequests);
@@ -294,6 +295,75 @@ class AuthService {
     }
   }
 
+  // Obtenir tous les utilisateurs (pour les administrateurs)
+  Future<List<UserModel>> getAllUsers() async {
+    try {
+      final snapshot = await _firestore.collection('users').get();
+      
+      return snapshot.docs.map((doc) => 
+        UserModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)
+      ).toList();
+    } catch (e) {
+      debugPrint('Erreur lors de la récupération de tous les utilisateurs: $e');
+      return [];
+    }
+  }
+
+  // Récupérer les préférences de l'utilisateur actuel
+  Future<UserPreferencesModel?> getUserPreferences() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return null;
+
+      final docSnapshot = await _firestore.collection('user_preferences').doc(user.uid).get();
+      
+      if (!docSnapshot.exists) {
+        // Retourner des préférences par défaut si elles n'existent pas
+        return UserPreferencesModel.createDefault(user.uid);
+      }
+
+      return UserPreferencesModel.fromMap(
+        docSnapshot.data() as Map<String, dynamic>,
+        docSnapshot.id,
+      );
+    } catch (e) {
+      debugPrint('Erreur lors de la récupération des préférences utilisateur: $e');
+      final user = _auth.currentUser;
+      if (user != null) {
+        return UserPreferencesModel.createDefault(user.uid);
+      }
+      return null;
+    }
+  }
+
+  // Mettre à jour les préférences de l'utilisateur actuel
+  Future<void> updateUserPreferences(Map<String, dynamic> preferencesData) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) throw Exception('Utilisateur non connecté');
+
+      // Extraire les données des préférences
+      final favoriteAgentIds = List<String>.from(preferencesData['favoriteAgentIds'] ?? []);
+      final categoryPreferences = Map<String, double>.from(preferencesData['categoryPreferences'] ?? {});
+      final recentSearches = List<String>.from(preferencesData['recentSearches'] ?? []);
+      final interfaceSettings = Map<String, dynamic>.from(preferencesData['interfaceSettings'] ?? {});
+
+      final userPreferences = UserPreferencesModel(
+        userId: user.uid,
+        favoriteAgentIds: favoriteAgentIds,
+        categoryPreferences: categoryPreferences,
+        recentSearches: recentSearches,
+        interfaceSettings: interfaceSettings,
+        lastUpdated: DateTime.now(),
+      );
+
+      await _firestore.collection('user_preferences').doc(user.uid).set(userPreferences.toMap());
+    } catch (e) {
+      debugPrint('Erreur lors de la mise à jour des préférences utilisateur: $e');
+      throw Exception('Impossible de mettre à jour les préférences: ${e.toString()}');
+    }
+  }
+
   // Mettre à jour le profil utilisateur
   Future<void> updateUserProfile({
     required String fullName,
@@ -316,13 +386,59 @@ class AuthService {
     }
   }
 
+  // Supprimer le compte utilisateur et toutes ses données
+  Future<void> deleteUserAccount({String? password}) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) throw Exception('Utilisateur non connecté');
+
+      // Si un mot de passe est fourni, réauthentifier l'utilisateur
+      if (password != null && user.email != null) {
+        final credential = auth.EmailAuthProvider.credential(
+          email: user.email!,
+          password: password,
+        );
+        await user.reauthenticateWithCredential(credential);
+      }
+
+      // Supprimer le document utilisateur de Firestore
+      await _firestore.collection('users').doc(user.uid).delete();
+
+      // Supprimer les préférences utilisateur si elles existent
+      final preferencesDoc = await _firestore.collection('user_preferences').doc(user.uid).get();
+      if (preferencesDoc.exists) {
+        await _firestore.collection('user_preferences').doc(user.uid).delete();
+      }
+
+      // Supprimer l'utilisateur de Firebase Auth
+      await user.delete();
+
+      debugPrint('Compte utilisateur et données associées supprimés avec succès');
+    } catch (e) {
+      debugPrint('Erreur lors de la suppression du compte utilisateur: $e');
+      
+      if (e is auth.FirebaseAuthException) {
+        switch (e.code) {
+          case 'requires-recent-login':
+            throw Exception('Veuillez vous reconnecter pour supprimer votre compte');
+          case 'wrong-password':
+            throw Exception('Mot de passe incorrect');
+          default:
+            throw Exception('Erreur lors de la suppression du compte: ${e.message}');
+        }
+      }
+      
+      throw Exception('Erreur lors de la suppression du compte: ${e.toString()}');
+    }
+  }
+
   // Réinitialiser le mot de passe
   Future<void> resetPassword(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
     } catch (e) {
       // Capturer spécifiquement les erreurs d'authentification Firebase
-      if (e is FirebaseAuthException) {
+      if (e is auth.FirebaseAuthException) {
         switch (e.code) {
           case 'user-not-found':
             throw Exception(AppConstants.errorUserNotFound);
@@ -350,7 +466,7 @@ class AuthService {
       if (user == null) throw Exception('Utilisateur non connecté');
 
       // Recréer les credentials pour vérifier le mot de passe actuel
-      final credential = EmailAuthProvider.credential(
+      final credential = auth.EmailAuthProvider.credential(
         email: user.email!,
         password: currentPassword,
       );
@@ -361,7 +477,7 @@ class AuthService {
       // Changer le mot de passe
       await user.updatePassword(newPassword);
     } catch (e) {
-      if (e is FirebaseAuthException) {
+      if (e is auth.FirebaseAuthException) {
         switch (e.code) {
           case 'wrong-password':
             throw Exception('Mot de passe actuel incorrect');

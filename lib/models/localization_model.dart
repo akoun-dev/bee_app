@@ -206,7 +206,7 @@ class LocalizationModel {
   // Formater une date selon les préférences
   String formatDate(DateTime date) {
     switch (dateFormat) {
-      case.DateFormat.ddMMyyyy:
+      case DateFormat.ddMMyyyy:
         return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
       case DateFormat.MMddyyyy:
         return '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}/${date.year}';

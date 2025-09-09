@@ -44,8 +44,8 @@ class DataDeletionRequestModel {
       userId: map['userId'] ?? '',
       userEmail: map['userEmail'] ?? '',
       reason: DeletionReason.values.firstWhere(
-        (e) => e.name == (map['reason'] ?? 'account_closure'),
-        orElse: () => DeletionReason.account_closure,
+        (e) => e.name == (map['reason'] ?? 'accountClosure'),
+        orElse: () => DeletionReason.accountClosure,
       ),
       additionalComments: map['additionalComments'],
       status: DeletionStatus.values.firstWhere(
@@ -207,11 +207,11 @@ class DataDeletionRequestModel {
 
   // Vérifier si la demande est urgente
   bool get isUrgentRequest {
-    return isUrgent || reason == DeletionReason.legal_requirement;
+    return isUrgent || reason == DeletionReason.legalRequirement;
   }
 
   // Obtenir les délais légaux de traitement
-  Duration getLegalDeadline {
+  Duration get legalDeadline {
     if (isUrgentRequest) {
       return const Duration(days: 7); // 7 jours pour les demandes urgentes
     }
@@ -238,6 +238,15 @@ class DataDeletionRequestModel {
     }
 
     return 'Données: ${categoriesToDelete.join(', ')}';
+  }
+
+  // Getters pour la compatibilité avec les écrans d'administration
+  DateTime? get completedAt {
+    return status == DeletionStatus.completed ? processedAt : null;
+  }
+
+  String? get failureReason {
+    return status == DeletionStatus.failed ? rejectionReason : null;
   }
 
   // Copie avec modification
@@ -280,12 +289,12 @@ class DataDeletionRequestModel {
 
 // Énumération pour les raisons de suppression
 enum DeletionReason {
-  account_closure,
-  data_correction,
-  withdrawal_of_consent,
-  legal_requirement,
-  data_inaccuracy,
-  security_breach,
+  accountClosure,
+  dataCorrection,
+  withdrawalOfConsent,
+  legalRequirement,
+  dataInaccuracy,
+  securityBreach,
   other,
 }
 
@@ -293,17 +302,17 @@ enum DeletionReason {
 extension DeletionReasonExtension on DeletionReason {
   String get displayName {
     switch (this) {
-      case DeletionReason.account_closure:
+      case DeletionReason.accountClosure:
         return 'Fermeture du compte';
-      case DeletionReason.data_correction:
+      case DeletionReason.dataCorrection:
         return 'Correction de données';
-      case DeletionReason.withdrawal_of_consent:
+      case DeletionReason.withdrawalOfConsent:
         return 'Retrait du consentement';
-      case DeletionReason.legal_requirement:
+      case DeletionReason.legalRequirement:
         return 'Exigence légale';
-      case DeletionReason.data_inaccuracy:
+      case DeletionReason.dataInaccuracy:
         return 'Données inexactes';
-      case DeletionReason.security_breach:
+      case DeletionReason.securityBreach:
         return 'Violation de sécurité';
       case DeletionReason.other:
         return 'Autre';
@@ -312,17 +321,17 @@ extension DeletionReasonExtension on DeletionReason {
 
   String get description {
     switch (this) {
-      case DeletionReason.account_closure:
+      case DeletionReason.accountClosure:
         return 'L\'utilisateur souhaite fermer son compte et supprimer toutes ses données';
-      case DeletionReason.data_correction:
+      case DeletionReason.dataCorrection:
         return 'Correction d\'informations erronées ou obsolètes';
-      case DeletionReason.withdrawal_of_consent:
+      case DeletionReason.withdrawalOfConsent:
         return 'Retrait du consentement pour le traitement des données';
-      case DeletionReason.legal_requirement:
+      case DeletionReason.legalRequirement:
         return 'Obligation légale de supprimer certaines données';
-      case DeletionReason.data_inaccuracy:
+      case DeletionReason.dataInaccuracy:
         return 'Les données sont inexactes ou incomplètes';
-      case DeletionReason.security_breach:
+      case DeletionReason.securityBreach:
         return 'Mesure de sécurité suite à une violation de données';
       case DeletionReason.other:
         return 'Autre raison non spécifiée';
@@ -331,17 +340,17 @@ extension DeletionReasonExtension on DeletionReason {
 
   IconData get icon {
     switch (this) {
-      case DeletionReason.account_closure:
+      case DeletionReason.accountClosure:
         return Icons.person_remove;
-      case DeletionReason.data_correction:
+      case DeletionReason.dataCorrection:
         return Icons.edit;
-      case DeletionReason.withdrawal_of_consent:
-        return thumbs_down;
-      case DeletionReason.legal_requirement:
+      case DeletionReason.withdrawalOfConsent:
+        return Icons.thumb_down;
+      case DeletionReason.legalRequirement:
         return Icons.gavel;
-      case DeletionReason.data_inaccuracy:
+      case DeletionReason.dataInaccuracy:
         return Icons.error_outline;
-      case DeletionReason.security_breach:
+      case DeletionReason.securityBreach:
         return Icons.security;
       case DeletionReason.other:
         return Icons.more_horiz;

@@ -28,13 +28,13 @@ class NotificationService {
       }
 
       // Configurer les notifications locales
-      final androidSettings = const AndroidInitializationSettings('@mipmap/ic_launcher');
-      final iosSettings = const DarwinInitializationSettings(
+      const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const iosSettings = DarwinInitializationSettings(
         requestAlertPermission: true,
         requestBadgePermission: true,
         requestSoundPermission: true,
       );
-      final initSettings = InitializationSettings(android: androidSettings, iOS: iosSettings);
+      const initSettings = InitializationSettings(android: androidSettings, iOS: iosSettings);
 
       await _localNotifications.initialize(initSettings);
 
@@ -81,7 +81,7 @@ class NotificationService {
 
     // Afficher une notification locale
     if (message.notification != null) {
-      final androidDetails = AndroidNotificationDetails(
+      const androidDetails = AndroidNotificationDetails(
         'bee_app_channel',
         'Notifications ZIBENE SECURITY',
         channelDescription: 'Canal pour les notifications de l\'application Bee',
@@ -89,13 +89,13 @@ class NotificationService {
         priority: Priority.high,
       );
 
-      final iosDetails = DarwinNotificationDetails(
+      const iosDetails = DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
       );
 
-      final details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+      const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
 
       await _localNotifications.show(
         message.hashCode,

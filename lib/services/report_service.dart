@@ -54,8 +54,8 @@ class ReportService {
     try {
       await _firestore.collection('reports').add({
         'type': type,
-        'startDate': startDate,
-        'endDate': endDate,
+        'startDate': Timestamp.fromDate(startDate),
+        'endDate': Timestamp.fromDate(endDate),
         'format': format,
         'generatedAt': FieldValue.serverTimestamp(),
         'status': 'completed',
@@ -104,8 +104,8 @@ class ReportService {
   ) async {
     try {
       final reservationsSnapshot = await _firestore.collection('reservations')
-          .where('startDate', isGreaterThanOrEqualTo: startDate)
-          .where('startDate', isLessThanOrEqualTo: endDate)
+          .where('startDate', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+          .where('startDate', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
           .get();
       
       // Traiter les données pour le rapport
@@ -137,8 +137,10 @@ class ReportService {
     
     for (final doc in docs) {
       final data = doc.data() as Map<String, dynamic>;
-      final status = data['status'] as String;
-      counts[status] = (counts[status] ?? 0) + 1;
+      final status = data['status'] as String?;
+      if (status != null && counts.containsKey(status)) {
+        counts[status] = (counts[status] ?? 0) + 1;
+      }
     }
     
     return counts;
@@ -164,8 +166,10 @@ class ReportService {
     
     for (final doc in docs) {
       final data = doc.data() as Map<String, dynamic>;
-      final location = data['location'] as String;
-      locationCounts[location] = (locationCounts[location] ?? 0) + 1;
+      final location = data['location'] as String?;
+      if (location != null) {
+        locationCounts[location] = (locationCounts[location] ?? 0) + 1;
+      }
     }
     
     // Trier par nombre de réservations
@@ -184,8 +188,85 @@ class ReportService {
     DateTime startDate,
     DateTime endDate,
   ) async {
-    // Implémenter la récupération des données de performance des agents
-    return {};
+    try {
+      final agentsSnapshot = await _firestore.collection('agents').get();
+      final reservationsSnapshot = await _firestore.collection('reservations')
+          .where('startDate', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+          .where('startDate', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
+          .get();
+      
+      final Map<String, dynamic> reportData = {
+        'totalAgents': agentsSnapshot.docs.length,
+        'agentsPerformance': _calculateAgentsPerformance(agentsSnapshot.docs, reservationsSnapshot.docs),
+      };
+      
+      return reportData;
+    } catch (e) {
+      if (kDebugMode) {
+        logger.e('Erreur lors de la récupération des données de performance: ${e.toString()}');
+      }
+      throw Exception('Erreur lors de la récupération des données de performance: ${e.toString()}');
+    }
+  }
+  
+  // Calculer la performance des agents
+  List<Map<String, dynamic>> _calculateAgentsPerformance(
+    List<QueryDocumentSnapshot> agentsDocs,
+    List<QueryDocumentSnapshot> reservationsDocs,
+  ) {
+    final Map<String, Map<String, dynamic>> agentStats = {};
+    
+    // Initialiser les statistiques pour chaque agent
+    for (final agentDoc in agentsDocs) {
+      final agentData = agentDoc.data() as Map<String, dynamic>;
+      agentStats[agentDoc.id] = {
+        'id': agentDoc.id,
+        'name': agentData['fullName'] ?? 'Inconnu',
+        'totalReservations': 0,
+        'completedReservations': 0,
+        'cancelledReservations': 0,
+        'averageRating': 0.0,
+        'totalRevenue': 0.0,
+      };
+    }
+    
+    // Calculer les statistiques à partir des réservations
+    for (final reservationDoc in reservationsDocs) {
+      final reservationData = reservationDoc.data() as Map<String, dynamic>;
+      final agentId = reservationData['agentId'] as String?;
+      
+      if (agentId != null && agentStats.containsKey(agentId)) {
+        final stats = agentStats[agentId]!;
+        stats['totalReservations'] = (stats['totalReservations'] as int) + 1;
+        
+        final status = reservationData['status'] as String?;
+        if (status == 'completed') {
+          stats['completedReservations'] = (stats['completedReservations'] as int) + 1;
+        } else if (status == 'cancelled') {
+          stats['cancelledReservations'] = (stats['cancelledReservations'] as int) + 1;
+        }
+        
+        final rating = reservationData['rating'] as double?;
+        if (rating != null) {
+          final currentRating = stats['averageRating'] as double;
+          final currentCount = stats['completedReservations'] as int;
+          stats['averageRating'] = ((currentRating * currentCount) + rating) / (currentCount + 1);
+        }
+        
+        final price = reservationData['price'] as double?;
+        if (price != null) {
+          stats['totalRevenue'] = (stats['totalRevenue'] as double) + price;
+        }
+      }
+    }
+    
+    // Convertir en liste et trier par nombre de réservations
+    final performanceList = agentStats.values.toList();
+    performanceList.sort((a, b) => 
+      (b['totalReservations'] as int).compareTo(a['totalReservations'] as int)
+    );
+    
+    return performanceList;
   }
   
   // Récupérer les données pour le rapport de satisfaction client
@@ -193,8 +274,43 @@ class ReportService {
     DateTime startDate,
     DateTime endDate,
   ) async {
-    // Implémenter la récupération des données de satisfaction client
-    return {};
+    try {
+      final reservationsSnapshot = await _firestore.collection('reservations')
+          .where('startDate', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+          .where('startDate', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
+          .where('rating', isNotEqualTo: null)
+          .get();
+      
+      final List<double> ratings = [];
+      final Map<int, int> ratingDistribution = {};
+      
+      for (final doc in reservationsSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final rating = data['rating'] as double?;
+        if (rating != null) {
+          ratings.add(rating);
+          final ratingInt = rating.round();
+          ratingDistribution[ratingInt] = (ratingDistribution[ratingInt] ?? 0) + 1;
+        }
+      }
+      
+      final averageRating = ratings.isNotEmpty
+          ? ratings.reduce((a, b) => a + b) / ratings.length
+          : 0.0;
+      
+      final Map<String, dynamic> reportData = {
+        'totalRatings': ratings.length,
+        'averageRating': averageRating,
+        'ratingDistribution': ratingDistribution,
+      };
+      
+      return reportData;
+    } catch (e) {
+      if (kDebugMode) {
+        logger.e('Erreur lors de la récupération des données de satisfaction: ${e.toString()}');
+      }
+      throw Exception('Erreur lors de la récupération des données de satisfaction: ${e.toString()}');
+    }
   }
   
   // Récupérer les données pour le rapport de revenus
@@ -202,7 +318,49 @@ class ReportService {
     DateTime startDate,
     DateTime endDate,
   ) async {
-    // Implémenter la récupération des données de revenus
-    return {};
+    try {
+      final reservationsSnapshot = await _firestore.collection('reservations')
+          .where('startDate', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+          .where('startDate', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
+          .where('status', isEqualTo: 'completed')
+          .get();
+      
+      double totalRevenue = 0.0;
+      final Map<String, double> revenueByMonth = {};
+      final Map<String, double> revenueByAgent = {};
+      
+      for (final doc in reservationsSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final price = data['price'] as double?;
+        final startDate = (data['startDate'] as Timestamp).toDate();
+        final agentId = data['agentId'] as String?;
+        
+        if (price != null) {
+          totalRevenue += price;
+          
+          // Par mois
+          final monthKey = DateFormat('yyyy-MM').format(startDate);
+          revenueByMonth[monthKey] = (revenueByMonth[monthKey] ?? 0.0) + price;
+          
+          // Par agent
+          if (agentId != null) {
+            revenueByAgent[agentId] = (revenueByAgent[agentId] ?? 0.0) + price;
+          }
+        }
+      }
+      
+      final Map<String, dynamic> reportData = {
+        'totalRevenue': totalRevenue,
+        'revenueByMonth': revenueByMonth,
+        'revenueByAgent': revenueByAgent,
+      };
+      
+      return reportData;
+    } catch (e) {
+      if (kDebugMode) {
+        logger.e('Erreur lors de la récupération des données de revenus: ${e.toString()}');
+      }
+      throw Exception('Erreur lors de la récupération des données de revenus: ${e.toString()}');
+    }
   }
 }

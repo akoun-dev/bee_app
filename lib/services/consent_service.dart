@@ -406,7 +406,7 @@ class ConsentService {
   }
 
   // Exporter les consentements d'un utilisateur (portabilité des données)
-  Future<Map<String, dynamic> exportUserConsents(String userId) async {
+  Future<Map<String, dynamic>> exportUserConsents(String userId) async {
     try {
       // Vérifier que l'utilisateur est connecté et a les permissions
       final currentUser = _authService.currentUser;

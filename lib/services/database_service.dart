@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
+import 'dart:async';
 import '../models/agent_model.dart';
 import '../models/reservation_model.dart';
 import '../models/review_model.dart';
 import '../models/user_model.dart';
+import '../models/user_preferences_model.dart';
 import 'agent_availability_service.dart';
 
 final logger = Logger();
@@ -26,13 +28,15 @@ class DatabaseService {
       .collection('reservations');
   final CollectionReference _reviewsCollection = FirebaseFirestore.instance
       .collection('reviews');
+  final CollectionReference _userPreferencesCollection = FirebaseFirestore.instance
+      .collection('user_preferences');
 
   // Constructeur avec injection de dépendances
   DatabaseService(this._availabilityService);
 
   // Constructeur pour les tests ou utilisation sans service de disponibilité
   DatabaseService.withoutAvailability() : _availabilityService = AgentAvailabilityService(
-    this,
+    DatabaseService.withoutAvailability(),
     FirebaseFirestore.instance,
   );
 
@@ -104,7 +108,7 @@ class DatabaseService {
         .map((snapshot) => snapshot.docs
             .map((doc) => UserModel.fromMap(
                 doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+            .toList()));
     */
   }
 
@@ -135,7 +139,7 @@ class DatabaseService {
         .map((snapshot) => snapshot.docs
             .map((doc) => UserModel.fromMap(
                 doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+            .toList()));
     */
   }
 
@@ -161,6 +165,53 @@ class DatabaseService {
     }
   }
 
+  // ===== PRÉFÉRENCES UTILISATEUR =====
+
+  // Récupérer les préférences d'un utilisateur
+  Future<UserPreferencesModel?> getUserPreferences(String userId) async {
+    try {
+      final docSnapshot = await _userPreferencesCollection.doc(userId).get();
+      
+      if (!docSnapshot.exists) {
+        // Retourner des préférences par défaut si elles n'existent pas
+        return UserPreferencesModel.createDefault(userId);
+      }
+
+      return UserPreferencesModel.fromMap(
+        docSnapshot.data() as Map<String, dynamic>,
+        docSnapshot.id,
+      );
+    } catch (e) {
+      debugPrint('Erreur lors de la récupération des préférences utilisateur: $e');
+      return UserPreferencesModel.createDefault(userId);
+    }
+  }
+
+  // Mettre à jour les préférences d'un utilisateur
+  Future<void> updateUserPreferences(String userId, Map<String, dynamic> preferencesData) async {
+    try {
+      // Extraire les données des préférences
+      final favoriteAgentIds = List<String>.from(preferencesData['favoriteAgentIds'] ?? []);
+      final categoryPreferences = Map<String, double>.from(preferencesData['categoryPreferences'] ?? {});
+      final recentSearches = List<String>.from(preferencesData['recentSearches'] ?? []);
+      final interfaceSettings = Map<String, dynamic>.from(preferencesData['interfaceSettings'] ?? {});
+
+      final userPreferences = UserPreferencesModel(
+        userId: userId,
+        favoriteAgentIds: favoriteAgentIds,
+        categoryPreferences: categoryPreferences,
+        recentSearches: recentSearches,
+        interfaceSettings: interfaceSettings,
+        lastUpdated: DateTime.now(),
+      );
+
+      await _userPreferencesCollection.doc(userId).set(userPreferences.toMap());
+    } catch (e) {
+      debugPrint('Erreur lors de la mise à jour des préférences utilisateur: $e');
+      throw Exception('Impossible de mettre à jour les préférences: ${e.toString()}');
+    }
+  }
+
   // ===== AGENTS =====
 
   // Récupérer tous les agents
@@ -179,6 +230,20 @@ class DatabaseService {
                   )
                   .toList(),
         );
+  }
+
+  // Récupérer tous les agents (méthode pour admin)
+  Future<List<AgentModel>> getAllAgents() async {
+    try {
+      final snapshot = await _agentsCollection.get();
+      
+      return snapshot.docs.map((doc) => 
+        AgentModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)
+      ).toList();
+    } catch (e) {
+      debugPrint('Erreur lors de la récupération de tous les agents: $e');
+      return [];
+    }
   }
 
   // Récupérer les agents disponibles
@@ -277,7 +342,7 @@ class DatabaseService {
       final result = professions.toList()..sort();
       return result;
     } catch (e) {
-      // Logger.error('Erreur lors de la récupération des professions: ${e.toString()}');
+      logger.e('Erreur lors de la récupération des professions: ${e.toString()}');
       return [];
     }
   }
@@ -339,8 +404,7 @@ class DatabaseService {
       final doc = querySnapshot.docs.first;
       return AgentModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
     } catch (e) {
-      // Utiliser un logger en production au lieu de print
-      // Logger.error('Erreur lors de la récupération de l\'agent par matricule: ${e.toString()}');
+      logger.e('Erreur lors de la récupération de l\'agent par matricule: ${e.toString()}');
       return null;
     }
   }
@@ -492,7 +556,7 @@ class DatabaseService {
       // Vérifier si des réservations existent
       return querySnapshot.docs.isNotEmpty;
     } catch (e) {
-      // Logger.error('Erreur lors de la vérification des réservations: ${e.toString()}');
+      logger.e('Erreur lors de la vérification des réservations: ${e.toString()}');
       return false;
     }
   }
@@ -539,7 +603,7 @@ class DatabaseService {
 
       yield agentsWithReservations;
     } catch (e) {
-      // Logger.error('Erreur lors de la récupération des agents avec réservations: ${e.toString()}');
+      logger.e('Erreur lors de la récupération des agents avec réservations: ${e.toString()}');
       yield [];
     }
   }

@@ -146,6 +146,54 @@ class AgentAvailabilityService {
     }
   }
 
+  // Obtenir la disponibilité d'un agent
+  Future<bool> getAgentAvailability(String agentId) async {
+    try {
+      final agent = await _databaseService.getAgent(agentId);
+      if (agent == null) {
+        return false;
+      }
+
+      // Récupérer les réservations actives de cet agent
+      final activeReservationsQuery = await _firestore
+          .collection('reservations')
+          .where('agentId', isEqualTo: agentId)
+          .where('status', whereIn: [
+            ReservationModel.statusPending,
+            ReservationModel.statusApproved,
+          ])
+          .get();
+
+      final activeReservations = activeReservationsQuery.docs
+          .map((doc) => ReservationModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .toList();
+
+      final now = DateTime.now();
+      bool hasActiveReservation = false;
+
+      for (final reservation in activeReservations) {
+        bool isActive = false;
+        
+        if (reservation.status == ReservationModel.statusApproved) {
+          isActive = reservation.startDate.isBefore(now) && 
+                     reservation.endDate.isAfter(now);
+        } else if (reservation.status == ReservationModel.statusPending) {
+          isActive = reservation.startDate.isAfter(now);
+        }
+
+        if (isActive) {
+          hasActiveReservation = true;
+          break;
+        }
+      }
+
+      return !hasActiveReservation;
+    } catch (e) {
+      debugPrint('Erreur lors de la vérification de la disponibilité de l\'agent $agentId: $e');
+      return false;
+    }
+  }
+
   // Rendre un agent manuellement indisponible (admin seulement)
   Future<void> setAgentManuallyUnavailable(String agentId, String reason) async {
     try {

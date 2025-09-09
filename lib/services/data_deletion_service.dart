@@ -336,7 +336,7 @@ class DataDeletionService {
         }
 
         // Si toutes les données personnelles sont supprimées et c'est une fermeture de compte
-        if (request.reason == DeletionReason.account_closure && 
+        if (request.reason == DeletionReason.accountClosure && 
             dataCategories.values.every((v) => v || !dataCategories.keys.contains(v))) {
           await _deleteUserAccount(userId);
           processedData['account'] = true;

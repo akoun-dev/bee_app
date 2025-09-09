@@ -9,13 +9,13 @@ class PermissionService extends ChangeNotifier {
     'view_users': 'Voir les utilisateurs',
     'create_users': 'Créer des utilisateurs',
     'edit_users': 'Modifier les utilisateurs',
-    'delete_users': 'Supprimer des utilisateurs',
+    'delete_users': 'Supprimer les utilisateurs',
     
     // Permissions agents
     'view_agents': 'Voir les agents',
     'create_agents': 'Créer des agents',
     'edit_agents': 'Modifier les agents',
-    'delete_agents': 'Supprimer des agents',
+    'delete_agents': 'Supprimer les agents',
     'certify_agents': 'Certifier les agents',
     'toggle_agent_availability': 'Modifier la disponibilité des agents',
     

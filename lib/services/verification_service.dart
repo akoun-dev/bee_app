@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logger/logger.dart';
+import 'package:firebase_auth/firebase_auth.dart' as auth;
 import '../services/auth_service.dart';
 import '../services/security_service.dart';
 import '../services/audit_service.dart';
@@ -127,12 +128,18 @@ class VerificationService {
                   },
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'Tentatives restantes : ${maxVerificationAttempts - await _getVerificationAttempts()}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.mediumColor,
-                  ),
+                FutureBuilder<int>(
+                  future: _getVerificationAttempts(),
+                  builder: (context, snapshot) {
+                    final attempts = snapshot.data ?? 0;
+                    return Text(
+                      'Tentatives restantes : ${maxVerificationAttempts - attempts}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.mediumColor,
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -198,7 +205,7 @@ class VerificationService {
           // Démarrer le compte à rebours
           if (remainingSeconds > 0) {
             Future.delayed(const Duration(seconds: 1), () {
-              if (remainingSeconds > 0 && mounted) {
+              if (remainingSeconds > 0 && context.mounted) {
                 setState(() => remainingSeconds--);
               }
             });
@@ -350,7 +357,7 @@ class VerificationService {
       if (currentUser == null) return false;
 
       // Recréer les credentials pour vérifier le mot de passe
-      final credential = EmailAuthProvider.credential(
+      final credential = auth.EmailAuthProvider.credential(
         email: currentUser.email!,
         password: password,
       );

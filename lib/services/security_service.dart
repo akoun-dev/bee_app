@@ -159,9 +159,24 @@ class SecurityService extends ChangeNotifier {
   // Démarrer le timer de session
   void _startSessionTimer() {
     _sessionTimer?.cancel();
-    _sessionTimer = Timer(
+    _sessionTimer = Timer.periodic(
       const Duration(minutes: sessionTimeoutMinutes),
-      () => endSession(),
+      (timer) async {
+        // Vérifier si la session est toujours active
+        final prefs = await SharedPreferences.getInstance();
+        final lastActivityString = prefs.getString(_lastActivityKey);
+        
+        if (lastActivityString != null) {
+          final lastActivity = DateTime.parse(lastActivityString);
+          final timeSinceLastActivity = DateTime.now().difference(lastActivity);
+          
+          if (timeSinceLastActivity.inMinutes > sessionTimeoutMinutes) {
+            await endSession();
+          }
+        } else {
+          await endSession();
+        }
+      },
     );
   }
 
