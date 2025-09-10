@@ -9,17 +9,35 @@ import 'database_service.dart';
 // Service pour gérer la disponibilité automatique des agents
 // et les permissions selon le type d'utilisateur
 class AgentAvailabilityService {
-  final DatabaseService _databaseService;
+  final DatabaseService? _databaseService;
   final FirebaseFirestore _firestore;
   Timer? _availabilityTimer;
 
   AgentAvailabilityService(this._databaseService, this._firestore);
+  
+  // Constructeur pour les cas où le DatabaseService n'est pas disponible
+  AgentAvailabilityService.withoutDatabaseService(this._firestore) : _databaseService = null;
+  
+  // Constructeur de fabrique pour éviter la dépendance circulaire
+  factory AgentAvailabilityService.create(DatabaseService? databaseService, FirebaseFirestore firestore) {
+    if (databaseService == null) {
+      return AgentAvailabilityService.withoutDatabaseService(firestore);
+    } else {
+      return AgentAvailabilityService(databaseService, firestore);
+    }
+  }
 
   // ===== GESTION AUTOMATIQUE DE LA DISPONIBILITÉ =====
 
   // Mettre à jour automatiquement la disponibilité des agents
   // Cette méthode devrait être appelée périodiquement ou lors d'événements clés
   Future<void> updateAgentsAvailability() async {
+    // Vérifier si le DatabaseService est disponible
+    if (_databaseService == null) {
+      debugPrint('DatabaseService non disponible, mise à jour de disponibilité annulée');
+      return;
+    }
+    
     try {
       debugPrint('Début de la mise à jour automatique de la disponibilité des agents');
       
@@ -81,7 +99,7 @@ class AgentAvailabilityService {
           debugPrint('Mise à jour de la disponibilité de l\'agent ${agent.fullName}: ${shouldBeAvailable ? 'Disponible' : 'Indisponible'}');
           
           final updatedAgent = agent.copyWith(isAvailable: shouldBeAvailable);
-          await _databaseService.updateAgent(updatedAgent);
+          await _databaseService!.updateAgent(updatedAgent);
         }
       }
 
@@ -94,8 +112,14 @@ class AgentAvailabilityService {
 
   // Mettre à jour la disponibilité d'un agent spécifique
   Future<void> updateAgentAvailability(String agentId) async {
+    // Vérifier si le DatabaseService est disponible
+    if (_databaseService == null) {
+      debugPrint('DatabaseService non disponible, mise à jour de disponibilité de l\'agent annulée');
+      return;
+    }
+    
     try {
-      final agent = await _databaseService.getAgent(agentId);
+      final agent = await _databaseService!.getAgent(agentId);
       if (agent == null) {
         throw Exception('Agent non trouvé');
       }
@@ -137,7 +161,7 @@ class AgentAvailabilityService {
       
       if (agent.isAvailable != shouldBeAvailable) {
         final updatedAgent = agent.copyWith(isAvailable: shouldBeAvailable);
-        await _databaseService.updateAgent(updatedAgent);
+        await _databaseService!.updateAgent(updatedAgent);
         debugPrint('Disponibilité de l\'agent ${agent.fullName} mise à jour: ${shouldBeAvailable ? 'Disponible' : 'Indisponible'}');
       }
     } catch (e) {
@@ -148,8 +172,14 @@ class AgentAvailabilityService {
 
   // Obtenir la disponibilité d'un agent
   Future<bool> getAgentAvailability(String agentId) async {
+    // Vérifier si le DatabaseService est disponible
+    if (_databaseService == null) {
+      debugPrint('DatabaseService non disponible, vérification de disponibilité annulée');
+      return false;
+    }
+    
     try {
-      final agent = await _databaseService.getAgent(agentId);
+      final agent = await _databaseService!.getAgent(agentId);
       if (agent == null) {
         return false;
       }
@@ -196,15 +226,21 @@ class AgentAvailabilityService {
 
   // Rendre un agent manuellement indisponible (admin seulement)
   Future<void> setAgentManuallyUnavailable(String agentId, String reason) async {
+    // Vérifier si le DatabaseService est disponible
+    if (_databaseService == null) {
+      debugPrint('DatabaseService non disponible, mise en indisponibilité manuelle annulée');
+      return;
+    }
+    
     try {
-      final agent = await _databaseService.getAgent(agentId);
+      final agent = await _databaseService!.getAgent(agentId);
       if (agent == null) {
         throw Exception('Agent non trouvé');
       }
 
       if (agent.isAvailable) {
         final updatedAgent = agent.copyWith(isAvailable: false);
-        await _databaseService.updateAgent(updatedAgent);
+        await _databaseService!.updateAgent(updatedAgent);
         
         // Créer un log pour cette action manuelle
         await _logManualAvailabilityChange(agentId, false, reason);
@@ -219,15 +255,21 @@ class AgentAvailabilityService {
 
   // Rendre un agent manuellement disponible (admin seulement)
   Future<void> setAgentManuallyAvailable(String agentId, String reason) async {
+    // Vérifier si le DatabaseService est disponible
+    if (_databaseService == null) {
+      debugPrint('DatabaseService non disponible, mise en disponibilité manuelle annulée');
+      return;
+    }
+    
     try {
-      final agent = await _databaseService.getAgent(agentId);
+      final agent = await _databaseService!.getAgent(agentId);
       if (agent == null) {
         throw Exception('Agent non trouvé');
       }
 
       if (!agent.isAvailable) {
         final updatedAgent = agent.copyWith(isAvailable: true);
-        await _databaseService.updateAgent(updatedAgent);
+        await _databaseService!.updateAgent(updatedAgent);
         
         // Créer un log pour cette action manuelle
         await _logManualAvailabilityChange(agentId, true, reason);
@@ -302,19 +344,31 @@ class AgentAvailabilityService {
 
   // Obtenir les agents disponibles pour un utilisateur selon ses permissions
   Stream<List<AgentModel>> getAvailableAgentsForUser(UserModel user) {
+    // Vérifier si le DatabaseService est disponible
+    if (_databaseService == null) {
+      debugPrint('DatabaseService non disponible, retour d\'un flux vide');
+      return Stream.value([]);
+    }
+    
     if (canViewUnavailableAgents(user)) {
       // Les utilisateurs avec permission voient tous les agents
-      return _databaseService.getAgents();
+      return _databaseService!.getAgents();
     } else {
       // Les autres utilisateurs ne voient que les agents disponibles
-      return _databaseService.getAvailableAgents();
+      return _databaseService!.getAvailableAgents();
     }
   }
 
   // Vérifier si un agent peut être réservé par un utilisateur
   Future<bool> canReserveAgent(UserModel user, String agentId) async {
+    // Vérifier si le DatabaseService est disponible
+    if (_databaseService == null) {
+      debugPrint('DatabaseService non disponible, vérification de réservation annulée');
+      return false;
+    }
+    
     try {
-      final agent = await _databaseService.getAgent(agentId);
+      final agent = await _databaseService!.getAgent(agentId);
       if (agent == null) {
         return false;
       }

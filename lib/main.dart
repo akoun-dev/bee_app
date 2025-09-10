@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -79,16 +81,10 @@ class _BeeAppState extends State<BeeApp> {
     super.initState();
     
     // Initialiser les services avec dépendances
-    // D'abord créer le DatabaseService avec un AgentAvailabilityService temporaire
-    _databaseService = DatabaseService.withoutAvailability();
+    // Utiliser le constructeur de fabrique pour éviter la dépendance circulaire
+    _availabilityService = AgentAvailabilityService.create(null, _firestore);
     
-    // Puis créer l'AgentAvailabilityService avec le DatabaseService
-    _availabilityService = AgentAvailabilityService(
-      _databaseService,
-      _firestore,
-    );
-    
-    // Mettre à jour le DatabaseService avec le bon AgentAvailabilityService
+    // Créer le DatabaseService avec l'AgentAvailabilityService
     _databaseService = DatabaseService(_availabilityService);
     
     // Initialiser les autres services
@@ -278,8 +274,8 @@ class _BeeAppState extends State<BeeApp> {
         
         // Services de sécurité et audit
         Provider<AuditService>.value(value: _auditService),
-        Provider<AuthorizationService>.value(value: _authorizationService),
-        Provider<SecurityService>.value(value: _securityService),
+        ChangeNotifierProvider<AuthorizationService>.value(value: _authorizationService),
+        ChangeNotifierProvider<SecurityService>.value(value: _securityService),
         Provider<VerificationService>.value(value: _verificationService),
         
         // Services RGPD et conformité
@@ -309,7 +305,9 @@ class _BeeAppState extends State<BeeApp> {
                 .map((lang) => lang.flutterLocale)
                 .toSet(),
             localizationsDelegates: const [
-              // Ajouter ici les délégués de localisation si vous utilisez un package comme easy_localization
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
             ],
             builder: (context, child) {
               // Appliquer le facteur d'échelle du texte

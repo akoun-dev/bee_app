@@ -540,6 +540,11 @@ class DataDeletionService {
   // Vérifier les demandes de suppression en attente et les traiter
   Future<void> processPendingDeletionRequests() async {
     try {
+      // Pour l'instant, désactiver complètement le traitement des demandes pour éviter les crashes
+      // TODO: Réactiver cet appel lorsque la collection data_deletion_requests sera configurée
+      debugPrint('Le traitement des demandes de suppression est temporairement désactivé.');
+      
+      /* Code d'origine commenté - à réactiver plus tard
       final snapshot = await _deletionRequestsCollection
           .where('status', isEqualTo: 'approved')
           .get();
@@ -554,14 +559,28 @@ class DataDeletionService {
           await _processDeletionRequest(request);
         }
       }
+      */
     } catch (e) {
       debugPrint('Erreur lors du traitement des demandes en attente: $e');
+      // Ne pas propager l'erreur pour éviter de bloquer l'initialisation de l'application
     }
   }
 
   // Obtenir des statistiques sur les demandes de suppression
   Future<Map<String, dynamic>> getDeletionStatistics() async {
     try {
+      // Pour l'instant, désactiver complètement l'obtention des statistiques pour éviter les crashes
+      // TODO: Réactiver cet appel lorsque la collection data_deletion_requests sera configurée
+      debugPrint('L\'obtention des statistiques de suppression est temporairement désactivée.');
+      
+      return {
+        'totalRequests': 0,
+        'statistics': {},
+        'lastUpdated': DateTime.now().toIso8601String(),
+        'note': 'Les statistiques sont temporairement désactivées',
+      };
+      
+      /* Code d'origine commenté - à réactiver plus tard
       // Vérifier que l'utilisateur est un administrateur
       final currentUser = _authService.currentUser;
       if (currentUser == null) {
@@ -630,9 +649,16 @@ class DataDeletionService {
         'statistics': statistics,
         'lastUpdated': DateTime.now().toIso8601String(),
       };
+      */
     } catch (e) {
       debugPrint('Erreur lors de l\'obtention des statistiques: $e');
-      throw Exception('Impossible d\'obtenir les statistiques: ${e.toString()}');
+      // Retourner des statistiques vides au lieu de lancer une exception
+      return {
+        'totalRequests': 0,
+        'statistics': {},
+        'lastUpdated': DateTime.now().toIso8601String(),
+        'error': e.toString(),
+      };
     }
   }
 

@@ -35,10 +35,7 @@ class DatabaseService {
   DatabaseService(this._availabilityService);
 
   // Constructeur pour les tests ou utilisation sans service de disponibilité
-  DatabaseService.withoutAvailability() : _availabilityService = AgentAvailabilityService(
-    DatabaseService.withoutAvailability(),
-    FirebaseFirestore.instance,
-  );
+  DatabaseService.withoutAvailability() : _availabilityService = AgentAvailabilityService.create(null, FirebaseFirestore.instance);
 
   // ===== UTILISATEURS =====
 

@@ -134,7 +134,7 @@ class AppTheme {
     ),
 
     // Cartes - Design élégant avec bordure fine et ombre subtile
-    cardTheme: const CardTheme(
+    cardTheme: const CardThemeData(
       color: Colors.white,
       elevation: 1, // Élévation subtile
       shadowColor: Color(0x29000000), // Ombre légère
@@ -353,7 +353,7 @@ class AppTheme {
     ),
 
     // Cartes - Design élégant avec bordure fine et ombre subtile
-    cardTheme: const CardTheme(
+    cardTheme: const CardThemeData(
       color: Color(0xFF1E1E1E), // Gris foncé
       elevation: 1, // Élévation subtile
       shadowColor: Color(0x29000000), // Ombre légère
