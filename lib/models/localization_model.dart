@@ -48,7 +48,7 @@ class LocalizationModel {
       ),
       timeFormat: TimeFormat.values.firstWhere(
         (e) => e.name == (map['timeFormat'] ?? 'HH:mm'),
-        orElse: () => TimeFormat.HHmm24,
+        orElse: () => TimeFormat.hhMm24,
       ),
       numberFormat: NumberFormat.values.firstWhere(
         (e) => e.name == (map['numberFormat'] ?? 'space_comma'),
@@ -104,14 +104,14 @@ class LocalizationModel {
 
     // Configurer les formats par défaut selon la région
     DateFormat dateFormat = DateFormat.ddMMyyyy;
-    TimeFormat timeFormat = TimeFormat.HHmm24;
+    TimeFormat timeFormat = TimeFormat.hhMm24;
     NumberFormat numberFormat = NumberFormat.spaceComma;
     CurrencyFormat currencyFormat = CurrencyFormat.eurSymbolBefore;
     MeasurementSystem measurementSystem = MeasurementSystem.metric;
 
     // Adapter selon la région
     if (region == AppRegion.unitedStates || region == AppRegion.unitedKingdom) {
-      dateFormat = DateFormat.MMddyyyy;
+      dateFormat = DateFormat.mmDDyyyy;
       numberFormat = NumberFormat.commaPeriod;
       measurementSystem = MeasurementSystem.imperial;
     }
@@ -121,7 +121,7 @@ class LocalizationModel {
       timeFormat = TimeFormat.hhmmA12;
     } else if (region == AppRegion.unitedKingdom) {
       currencyFormat = CurrencyFormat.gbpSymbolBefore;
-      timeFormat = TimeFormat.HHmm24;
+      timeFormat = TimeFormat.hhMm24;
     }
 
     // Détecter le fuseau horaire par défaut
@@ -164,7 +164,7 @@ class LocalizationModel {
     MeasurementSystem newMeasurementSystem = measurementSystem;
 
     if (newRegion == AppRegion.unitedStates || newRegion == AppRegion.unitedKingdom) {
-      newDateFormat = DateFormat.MMddyyyy;
+      newDateFormat = DateFormat.mmDDyyyy;
       newNumberFormat = NumberFormat.commaPeriod;
       newMeasurementSystem = MeasurementSystem.imperial;
     } else {
@@ -178,10 +178,10 @@ class LocalizationModel {
       newTimeFormat = TimeFormat.hhmmA12;
     } else if (newRegion == AppRegion.unitedKingdom) {
       newCurrencyFormat = CurrencyFormat.gbpSymbolBefore;
-      newTimeFormat = TimeFormat.HHmm24;
+      newTimeFormat = TimeFormat.hhMm24;
     } else {
       newCurrencyFormat = CurrencyFormat.eurSymbolBefore;
-      newTimeFormat = TimeFormat.HHmm24;
+      newTimeFormat = TimeFormat.hhMm24;
     }
 
     return copyWith(
@@ -208,11 +208,11 @@ class LocalizationModel {
     switch (dateFormat) {
       case DateFormat.ddMMyyyy:
         return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-      case DateFormat.MMddyyyy:
+      case DateFormat.mmDDyyyy:
         return '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}/${date.year}';
       case DateFormat.yyyyMMdd:
         return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-      case DateFormat.MMddyy:
+      case DateFormat.mmDDyy:
         return '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}/${date.year.toString().substring(2)}';
       case DateFormat.ddMMyy:
         return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year.toString().substring(2)}';
@@ -225,9 +225,9 @@ class LocalizationModel {
     final minute = time.minute;
 
     switch (timeFormat) {
-      case TimeFormat.HHmm24:
+      case TimeFormat.hhMm24:
         return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
-      case TimeFormat.HHmm12:
+      case TimeFormat.hhMm12:
         final period = hour >= 12 ? 'PM' : 'AM';
         final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
         return '$displayHour:${minute.toString().padLeft(2, '0')} $period';
@@ -235,7 +235,7 @@ class LocalizationModel {
         final period = hour >= 12 ? 'PM' : 'AM';
         final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
         return '${displayHour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} $period';
-      case TimeFormat.Hhmm24:
+      case TimeFormat.hhMm24Alt:
         return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
     }
   }
@@ -654,9 +654,9 @@ enum TimeZone {
 // Énumération pour les formats de date
 enum DateFormat {
   ddMMyyyy(name: 'dd/MM/yyyy', example: '25/12/2023'),
-  MMddyyyy(name: 'MM/dd/yyyy', example: '12/25/2023'),
+  mmDDyyyy(name: 'MM/dd/yyyy', example: '12/25/2023'),
   yyyyMMdd(name: 'yyyy-MM-dd', example: '2023-12-25'),
-  MMddyy(name: 'MM/dd/yy', example: '12/25/23'),
+  mmDDyy(name: 'MM/dd/yy', example: '12/25/23'),
   ddMMyy(name: 'dd/MM/yy', example: '25/12/23');
 
   const DateFormat({required this.name, required this.example});
@@ -667,10 +667,10 @@ enum DateFormat {
 
 // Énumération pour les formats d'heure
 enum TimeFormat {
-  HHmm24(name: 'HH:mm', example: '14:30'),
-  HHmm12(name: 'HH:mm', example: '14:30'),
+  hhMm24(name: 'HH:mm', example: '14:30'),
+  hhMm12(name: 'HH:mm', example: '14:30'),
   hhmmA12(name: 'hh:mm A', example: '02:30 PM'),
-  Hhmm24(name: 'HH:mm', example: '14:30');
+  hhMm24Alt(name: 'HH:mm', example: '14:30');
 
   const TimeFormat({required this.name, required this.example});
 

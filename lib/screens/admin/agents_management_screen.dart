@@ -56,7 +56,9 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
               backgroundColor: AppTheme.errorColor,
             ),
           );
-          context.go('/admin');
+          if (mounted) {
+            context.go('/admin');
+          }
         }
       }
     } catch (e) {
@@ -67,7 +69,9 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
             backgroundColor: AppTheme.errorColor,
           ),
         );
-        context.go('/admin');
+        if (mounted) {
+          context.go('/admin');
+        }
       }
     }
   }
@@ -698,12 +702,15 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
     }
 
     // Demander une double vérification pour l'action critique
-    final verified = await verificationService.requestDoubleVerification(
-      context,
-      action: 'Supprimer l\'agent',
-      targetName: agent.fullName,
-      additionalMessage: 'Cette action est irréversible et supprimera toutes les données associées à cet agent, y compris ses réservations et avis.',
-    );
+    bool verified = false;
+    if (mounted) {
+      verified = await verificationService.requestDoubleVerification(
+        context,
+        action: 'Supprimer l\'agent',
+        targetName: agent.fullName,
+        additionalMessage: 'Cette action est irréversible et supprimera toutes les données associées à cet agent, y compris ses réservations et avis.',
+      );
+    }
 
     if (!verified) return;
 
@@ -835,13 +842,15 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
                 child: IconButton(
                   icon: const Icon(Icons.camera_alt, color: Colors.white),
                   onPressed: () async {
-                    final storageService = Provider.of<StorageService>(
-                      context,
-                      listen: false,
-                    );
-                    final pickedImage = await storageService.pickImage();
-                    if (pickedImage != null) {
-                      onImageChanged(pickedImage);
+                    if (mounted) {
+                      final storageService = Provider.of<StorageService>(
+                        context,
+                        listen: false,
+                      );
+                      final pickedImage = await storageService.pickImage();
+                      if (pickedImage != null && mounted) {
+                        onImageChanged(pickedImage);
+                      }
                     }
                   },
                 ),
@@ -917,7 +926,7 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
             // Genre
             Expanded(
               child: DropdownButtonFormField<String>(
-                initialValue: gender,
+                value: gender,
                 decoration: const InputDecoration(
                   labelText: 'Genre',
                   prefixIcon: Icon(Icons.wc),
@@ -940,7 +949,7 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
             // Groupe sanguin
             Expanded(
               child: DropdownButtonFormField<String>(
-                initialValue: bloodType,
+                value: bloodType,
                 decoration: const InputDecoration(
                   labelText: 'Groupe sanguin',
                   prefixIcon: Icon(Icons.bloodtype),
@@ -1187,7 +1196,7 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
               style: TextStyle(fontSize: 12),
             ),
             value: isCertified,
-            activeThumbColor: AppTheme.infoColor,
+            activeColor: AppTheme.infoColor,
             onChanged: (value) {
               onCertifiedChanged(value);
             },
@@ -1213,7 +1222,7 @@ class _AgentsManagementScreenState extends State<AgentsManagementScreen> {
               style: TextStyle(fontSize: 12),
             ),
             value: isAvailable,
-            activeThumbColor: AppTheme.accentColor,
+            activeColor: AppTheme.accentColor,
             onChanged: (value) {
               onAvailableChanged(value);
             },

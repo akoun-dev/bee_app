@@ -134,18 +134,18 @@ class AppTheme {
     ),
 
     // Cartes - Design élégant avec bordure fine et ombre subtile
-    cardTheme: CardThemeData(
+    cardTheme: const CardTheme(
       color: Colors.white,
       elevation: 1, // Élévation subtile
-      shadowColor: const Color(0x29000000), // Ombre légère
+      shadowColor: Color(0x29000000), // Ombre légère
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: const BorderSide(
+        borderRadius: BorderRadius.all(Radius.circular(8)),
+        side: BorderSide(
           color: Color(0xFFE0E0E0),
           width: 0.5,
         ), // Bordure très fine
       ),
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
     ),
 
     // Typographie - Style moderne et professionnel
@@ -353,18 +353,18 @@ class AppTheme {
     ),
 
     // Cartes - Design élégant avec bordure fine et ombre subtile
-    cardTheme: CardThemeData(
+    cardTheme: const CardTheme(
       color: Color(0xFF1E1E1E), // Gris foncé
       elevation: 1, // Élévation subtile
-      shadowColor: const Color(0x29000000), // Ombre légère
+      shadowColor: Color(0x29000000), // Ombre légère
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: const BorderSide(
+        borderRadius: BorderRadius.all(Radius.circular(8)),
+        side: BorderSide(
           color: Color(0xFF2C2C2C),
           width: 0.5,
         ), // Bordure très fine
       ),
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
     ),
 
     // Typographie - Style moderne et professionnel

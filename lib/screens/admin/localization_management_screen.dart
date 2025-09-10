@@ -428,7 +428,7 @@ class _LocalizationManagementScreenState extends State<LocalizationManagementScr
             
             // Filtre par langue
             DropdownButtonFormField<AppLanguage?>(
-              initialValue: _filterLanguage,
+              value: _filterLanguage,
               decoration: const InputDecoration(
                 labelText: 'Langue',
                 border: OutlineInputBorder(),
@@ -450,7 +450,7 @@ class _LocalizationManagementScreenState extends State<LocalizationManagementScr
             
             // Filtre par région
             DropdownButtonFormField<AppRegion?>(
-              initialValue: _filterRegion,
+              value: _filterRegion,
               decoration: const InputDecoration(
                 labelText: 'Région',
                 border: OutlineInputBorder(),
@@ -472,7 +472,7 @@ class _LocalizationManagementScreenState extends State<LocalizationManagementScr
             
             // Filtre par fuseau horaire
             DropdownButtonFormField<TimeZone?>(
-              initialValue: _filterTimeZone,
+              value: _filterTimeZone,
               decoration: const InputDecoration(
                 labelText: 'Fuseau horaire',
                 border: OutlineInputBorder(),
@@ -716,7 +716,7 @@ class _LocalizationManagementScreenState extends State<LocalizationManagementScr
             region: AppRegion.france,
             timeZone: TimeZone.europeParis,
             dateFormat: DateFormat.ddMMyyyy,
-            timeFormat: TimeFormat.HHmm24,
+            timeFormat: TimeFormat.hhMm24,
             numberFormat: NumberFormat.spaceComma,
             currencyFormat: CurrencyFormat.eurSymbolBefore,
             measurementSystem: MeasurementSystem.metric,
@@ -746,7 +746,7 @@ class _LocalizationManagementScreenState extends State<LocalizationManagementScr
                     
                     // Langue
                     DropdownButtonFormField<AppLanguage>(
-                      initialValue: selectedLanguage,
+                      value: selectedLanguage,
                       decoration: const InputDecoration(
                         labelText: 'Langue',
                         border: OutlineInputBorder(),
@@ -767,7 +767,7 @@ class _LocalizationManagementScreenState extends State<LocalizationManagementScr
                     
                     // Région
                     DropdownButtonFormField<AppRegion>(
-                      initialValue: selectedRegion,
+                      value: selectedRegion,
                       decoration: const InputDecoration(
                         labelText: 'Région',
                         border: OutlineInputBorder(),
@@ -788,7 +788,7 @@ class _LocalizationManagementScreenState extends State<LocalizationManagementScr
                     
                     // Fuseau horaire
                     DropdownButtonFormField<TimeZone>(
-                      initialValue: selectedTimeZone,
+                      value: selectedTimeZone,
                       decoration: const InputDecoration(
                         labelText: 'Fuseau horaire',
                         border: OutlineInputBorder(),

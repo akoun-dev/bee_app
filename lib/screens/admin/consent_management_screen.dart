@@ -302,7 +302,7 @@ class _ConsentManagementScreenState extends State<ConsentManagementScreen> {
             
             // Filtre de type
             DropdownButtonFormField<String>(
-              initialValue: _filterType,
+              value: _filterType,
               decoration: const InputDecoration(
                 labelText: 'Filtrer par',
                 border: OutlineInputBorder(),
@@ -326,7 +326,7 @@ class _ConsentManagementScreenState extends State<ConsentManagementScreen> {
             
             // Filtre par type de consentement
             DropdownButtonFormField<ConsentType?>(
-              initialValue: _filterConsentType,
+              value: _filterConsentType,
               decoration: const InputDecoration(
                 labelText: 'Type de consentement',
                 border: OutlineInputBorder(),

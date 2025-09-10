@@ -325,7 +325,6 @@ class AdvancedReportService {
 
     pdf.addPage(
       pw.Page(
-        pageFormat: pw.PdfPageFormat.a4,
         build: (pw.Context context) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,

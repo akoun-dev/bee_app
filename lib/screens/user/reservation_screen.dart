@@ -10,7 +10,6 @@ import '../../services/database_service.dart';
 import '../../services/agent_availability_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/theme.dart';
-import '../../widgets/common_widgets.dart';
 
 // Écran de réservation d'un agent
 class ReservationScreen extends StatefulWidget {
@@ -43,7 +42,6 @@ class _ReservationScreenState extends State<ReservationScreen> {
 
   // Protection contre les soumissions multiples
   DateTime? _lastSubmissionTime;
-  final bool _isFormValid = false;
 
   @override
   void initState() {
@@ -286,6 +284,132 @@ class _ReservationScreenState extends State<ReservationScreen> {
     }
   }
 
+  // Vérifier si l'utilisateur peut soumettre une réservation
+  Future<bool> _canSubmitReservation() async {
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final availabilityService = Provider.of<AgentAvailabilityService>(context, listen: false);
+
+      final currentUser = authService.currentUser;
+      if (currentUser == null) {
+        return false;
+      }
+
+      final userProfile = await Provider.of<DatabaseService>(context, listen: false)
+          .getUser(currentUser.uid);
+      if (userProfile == null) {
+        return false;
+      }
+
+      // Les admins peuvent toujours soumettre
+      if (userProfile.isAdmin) {
+        return true;
+      }
+
+      // Les autres utilisateurs doivent vérifier la disponibilité
+      return await availabilityService.canReserveAgent(userProfile, widget.agentId);
+    } catch (e) {
+      debugPrint('Erreur lors de la vérification de la soumission: $e');
+      return false;
+    }
+  }
+
+  // Gérer les actions administrateur
+  void _handleAdminAction(String action) async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final availabilityService = Provider.of<AgentAvailabilityService>(context, listen: false);
+
+    final currentUser = authService.currentUser;
+    if (currentUser == null) return;
+
+    final userProfile = await Provider.of<DatabaseService>(context, listen: false)
+        .getUser(currentUser.uid);
+    if (userProfile == null || !availabilityService.canModifyAgentAvailability(userProfile)) {
+      return;
+    }
+
+    switch (action) {
+      case 'toggle_availability':
+        _showToggleAvailabilityDialog();
+        break;
+      case 'view_logs':
+        _showAvailabilityLogs();
+        break;
+    }
+  }
+
+  // Afficher le dialogue de basculement de disponibilité
+  void _showToggleAvailabilityDialog() {
+    if (_agent == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Modifier la disponibilité'),
+        content: Text(
+          'Voulez-vous ${_agent!.isAvailable ? 'rendre indisponible' : 'rendre disponible'} l\'agent ${_agent!.fullName} ?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                final availabilityService = Provider.of<AgentAvailabilityService>(context, listen: false);
+                
+                if (_agent!.isAvailable) {
+                  await availabilityService.setAgentManuallyUnavailable(
+                    _agent!.id,
+                    'Modification manuelle par administrateur',
+                  );
+                } else {
+                  await availabilityService.setAgentManuallyAvailable(
+                    _agent!.id,
+                    'Modification manuelle par administrateur',
+                  );
+                }
+
+                // Recharger les détails de l'agent
+                _loadAgentDetails();
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Disponibilité de l\'agent mise à jour avec succès'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Erreur lors de la mise à jour: ${e.toString()}'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text('Confirmer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Afficher les logs de disponibilité
+  void _showAvailabilityLogs() {
+    if (_agent == null) return;
+
+    // Naviguer vers un écran de logs (à implémenter)
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Fonctionnalité des logs à implémenter'),
+        backgroundColor: Colors.blue,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context, listen: false);
@@ -311,7 +435,9 @@ class _ReservationScreenState extends State<ReservationScreen> {
                 final user = snapshot.data;
                 if (user != null && availabilityService.canModifyAgentAvailability(user)) {
                   return PopupMenuButton<String>(
-                    onSelected: (value) => handleAdminAction(value),
+                    onSelected: (value) {
+                      _handleAdminAction(value);
+                    },
                     itemBuilder: (context) => [
                       const PopupMenuItem(
                         value: 'toggle_availability',
@@ -343,14 +469,58 @@ class _ReservationScreenState extends State<ReservationScreen> {
         ],
       ),
       body: _isLoading
-          ? const LoadingIndicator(message: 'Chargement des informations...')
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Chargement des informations...'),
+                ],
+              ),
+            )
           : _errorMessage != null
-              ? ErrorMessage(
-                  message: 'Erreur: $_errorMessage',
-                  onRetry: _loadAgentDetails,
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: Colors.red,
+                        size: 48,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Erreur: $_errorMessage',
+                        style: const TextStyle(color: Colors.red),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadAgentDetails,
+                        child: const Text('Réessayer'),
+                      ),
+                    ],
+                  ),
                 )
               : _agent == null
-                  ? const ErrorMessage(message: 'Agent introuvable')
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: Colors.red,
+                            size: 48,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Agent introuvable',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ],
+                      ),
+                    )
                   : _buildReservationForm(),
     );
   }
@@ -403,10 +573,20 @@ class _ReservationScreenState extends State<ReservationScreen> {
                               ),
                             ],
                           ),
-                          child: UserAvatar(
-                            imageUrl: _agent!.profileImageUrl,
-                            name: _agent!.fullName,
-                            size: 70,
+                          child: CircleAvatar(
+                            radius: 35,
+                            backgroundImage: _agent!.profileImageUrl != null
+                                ? NetworkImage(_agent!.profileImageUrl!)
+                                : null,
+                            child: _agent!.profileImageUrl == null
+                                ? Text(
+                                    _agent!.fullName.substring(0, 1).toUpperCase(),
+                                    style: const TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  )
+                                : null,
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -432,9 +612,28 @@ class _ReservationScreenState extends State<ReservationScreen> {
                               const SizedBox(height: 8),
                               Row(
                                 children: [
-                                  RatingDisplay(
-                                    rating: _agent!.averageRating,
-                                    ratingCount: _agent!.ratingCount,
+                                  Row(
+                                    children: [
+                                      Row(
+                                        children: List.generate(5, (index) {
+                                          return Icon(
+                                            index < _agent!.averageRating.floor()
+                                                ? Icons.star
+                                                : Icons.star_border,
+                                            color: Colors.amber,
+                                            size: 16,
+                                          );
+                                        }),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '(${_agent!.ratingCount})',
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   const Spacer(),
                                   Container(
@@ -547,427 +746,331 @@ class _ReservationScreenState extends State<ReservationScreen> {
                 ),
               ),
 
-          // Formulaire de réservation
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Titre du formulaire
-                  Row(
+              // Formulaire de réservation
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryColor.withAlpha(25),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Icons.edit_calendar,
-                          color: AppTheme.primaryColor,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'Détails de la réservation',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Afficher le message d'erreur s'il y en a un
-                  if (_errorMessage != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppTheme.errorColor.withAlpha(25),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppTheme.errorColor),
-                      ),
-                      child: Row(
+                      // Titre du formulaire
+                      Row(
                         children: [
-                          const Icon(
-                            Icons.error_outline,
-                            color: AppTheme.errorColor,
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryColor.withAlpha(25),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.edit_calendar,
+                              color: AppTheme.primaryColor,
+                              size: 20,
+                            ),
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _errorMessage!,
-                              style: const TextStyle(color: AppTheme.errorColor),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Détails de la réservation',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                  ],
 
-                  // Sélection de dates
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(10),
-                          blurRadius: 8,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Période de la mission',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
+                      const SizedBox(height: 20),
 
-                        // Dates et durée
-                        Row(
-                          children: [
-                            Expanded(
-                              child: InkWell(
-                                onTap: _selectStartDate,
-                                child: Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.grey[300]!),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Début',
-                                        style: TextStyle(
-                                          color: Colors.grey,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.calendar_today,
-                                            size: 16,
-                                            color: AppTheme.primaryColor,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            dateFormat.format(_startDate),
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: InkWell(
-                                onTap: _selectEndDate,
-                                child: Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.grey[300]!),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Fin',
-                                        style: TextStyle(
-                                          color: Colors.grey,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.calendar_today,
-                                            size: 16,
-                                            color: AppTheme.primaryColor,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            dateFormat.format(_endDate),
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        // Durée de la mission
+                      // Afficher le message d'erreur s'il y en a un
+                      if (_errorMessage != null) ...[
                         Container(
-                          width: double.infinity,
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppTheme.primaryColor.withAlpha(15),
+                            color: AppTheme.errorColor.withAlpha(25),
                             borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppTheme.errorColor),
                           ),
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               const Icon(
-                                Icons.timelapse,
-                                size: 16,
-                                color: AppTheme.primaryColor,
+                                Icons.error_outline,
+                                color: AppTheme.errorColor,
                               ),
                               const SizedBox(width: 8),
-                              Text(
-                                'Durée: $duration ${duration > 1 ? 'jours' : 'jour'}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                  color: AppTheme.primaryColor,
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: const TextStyle(color: AppTheme.errorColor),
                                 ),
                               ),
                             ],
                           ),
                         ),
+                        const SizedBox(height: 20),
                       ],
-                    ),
+
+                      // Sélection de dates
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(10),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Période de la mission',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Dates et durée
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: _selectStartDate,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: Colors.grey[300]!),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'Début',
+                                            style: TextStyle(
+                                              color: Colors.grey,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.calendar_today,
+                                                size: 16,
+                                                color: AppTheme.primaryColor,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                dateFormat.format(_startDate),
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: _selectEndDate,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: Colors.grey[300]!),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'Fin',
+                                            style: TextStyle(
+                                              color: Colors.grey,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.calendar_today,
+                                                size: 16,
+                                                color: AppTheme.primaryColor,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                dateFormat.format(_endDate),
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 12),
+
+                            // Durée de la mission
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryColor.withAlpha(15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.timelapse,
+                                    size: 16,
+                                    color: AppTheme.primaryColor,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Durée: $duration ${duration > 1 ? 'jours' : 'jour'}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      color: AppTheme.primaryColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Lieu et description
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(10),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Informations de la mission',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Lieu
+                            TextFormField(
+                              controller: _locationController,
+                              decoration: InputDecoration(
+                                labelText: AppConstants.location,
+                                prefixIcon: const Icon(Icons.location_on),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Veuillez entrer le lieu de la mission';
+                                }
+                                return null;
+                              },
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // Description
+                            TextFormField(
+                              controller: _descriptionController,
+                              decoration: InputDecoration(
+                                labelText: AppConstants.description,
+                                prefixIcon: const Icon(Icons.description),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              maxLines: 5,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Veuillez entrer une description de la mission';
+                                }
+                                return null;
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Bouton de soumission avec vérification des permissions
+                      FutureBuilder<bool>(
+                        future: _canSubmitReservation(),
+                        builder: (context, snapshot) {
+                          final canSubmit = snapshot.data ?? false;
+                          
+                          return ElevatedButton(
+                            onPressed: canSubmit ? () {
+                              _submitReservation();
+                            } : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primaryColor,
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size(double.infinity, 50),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: _isSubmitting
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : Text(AppConstants.submitReservation),
+                          );
+                        },
+                      ),
+
+                      const SizedBox(height: 20),
+                    ],
                   ),
-
-                  const SizedBox(height: 20),
-
-                  // Lieu et description
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(10),
-                          blurRadius: 8,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Informations de la mission',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Lieu
-                        CustomTextField(
-                          label: AppConstants.location,
-                          controller: _locationController,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Veuillez entrer le lieu de la mission';
-                            }
-                            return null;
-                          },
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Description
-                        CustomTextField(
-                          label: AppConstants.description,
-                          controller: _descriptionController,
-                          maxLines: 5,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Veuillez entrer une description de la mission';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Bouton de soumission avec vérification des permissions
-                  FutureBuilder<bool>(
-                    future: _canSubmitReservation(),
-                    builder: (context, snapshot) {
-                      final canSubmit = snapshot.data ?? false;
-                      
-                      return PrimaryButton(
-                        text: AppConstants.submitReservation,
-                        onPressed: canSubmit ? () async {
-                          await _submitReservation();
-                        } : null,
-                        isLoading: _isSubmitting,
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 20),
-                ],
+                ),
               ),
-            ),
-          ),
         ],
       ),
     );
-  }
-
-  // Vérifier si l'utilisateur peut soumettre une réservation
-  Future<bool> _canSubmitReservation() async {
-    try {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      final availabilityService = Provider.of<AgentAvailabilityService>(context, listen: false);
-
-      final currentUser = authService.currentUser;
-      if (currentUser == null) {
-        return false;
-      }
-
-      final userProfile = await Provider.of<DatabaseService>(context, listen: false)
-          .getUser(currentUser.uid);
-      if (userProfile == null) {
-        return false;
-      }
-
-      // Les admins peuvent toujours soumettre
-      if (userProfile.isAdmin) {
-        return true;
-      }
-
-      // Les autres utilisateurs doivent vérifier la disponibilité
-      return await availabilityService.canReserveAgent(userProfile, widget.agentId);
-    } catch (e) {
-      debugPrint('Erreur lors de la vérification de la soumission: $e');
-      return false;
-    }
-  }
-
-  // Gérer les actions administrateur
-  void handleAdminAction(String action) async {
-    final authService = Provider.of<AuthService>(context, listen: false);
-    final availabilityService = Provider.of<AgentAvailabilityService>(context, listen: false);
-
-    final currentUser = authService.currentUser;
-    if (currentUser == null) return;
-
-    final userProfile = await Provider.of<DatabaseService>(context, listen: false)
-        .getUser(currentUser.uid);
-    if (userProfile == null || !availabilityService.canModifyAgentAvailability(userProfile)) {
-      return;
-    }
-
-    switch (action) {
-      case 'toggle_availability':
-        showToggleAvailabilityDialog();
-        break;
-      case 'view_logs':
-        showAvailabilityLogs();
-        break;
-    }
-  }
-
-  // Afficher le dialogue de basculement de disponibilité
-  void showToggleAvailabilityDialog() {
-    if (_agent == null) return;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Modifier la disponibilité'),
-        content: Text(
-          'Voulez-vous ${_agent!.isAvailable ? 'rendre indisponible' : 'rendre disponible'} l\'agent ${_agent!.fullName} ?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              try {
-                final availabilityService = Provider.of<AgentAvailabilityService>(context, listen: false);
-                
-                if (_agent!.isAvailable) {
-                  await availabilityService.setAgentManuallyUnavailable(
-                    _agent!.id,
-                    'Modification manuelle par administrateur',
-                  );
-                } else {
-                  await availabilityService.setAgentManuallyAvailable(
-                    _agent!.id,
-                    'Modification manuelle par administrateur',
-                  );
-                }
-
-                // Recharger les détails de l'agent
-                _loadAgentDetails();
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Disponibilité de l\'agent mise à jour avec succès'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Erreur lors de la mise à jour: ${e.toString()}'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            child: Text('Confirmer'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Afficher les logs de disponibilité
-  void showAvailabilityLogs() {
-    if (_agent == null) return;
-
-    // Naviguer vers un écran de logs (à implémenter)
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Fonctionnalité des logs à implémenter'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
+  },
+);
+}
 }
